@@ -1,6 +1,7 @@
 class Colours(object):
     # Define the colors we will use in RGB format
     BLACK = (0, 0, 0)
+    GREY = (100, 100, 100)
     WHITE = (255, 255, 255)
     BLUE = (0, 0, 255)
     GREEN = (0, 255, 0)

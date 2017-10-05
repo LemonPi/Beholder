@@ -13,5 +13,5 @@ robot.add_to_screen(window)
 
 while true_until_window_closed():
     window.draw()
-    time.sleep(0.2)
-    robot.move(0.1, 10)
+    time.sleep(0.1)
+    robot.move(0.01, 1)

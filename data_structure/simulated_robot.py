@@ -18,6 +18,13 @@ class SimulatedRobot(Particle):
         # Robot
         draw_triangle(window.screen, x_px, y_px, self.h, r=7, c=Colours.ROBOT_COLOUR, fill=True)
 
+        # Line follower indicator.
+        line_reading = self.world.get_line_reading(self.x, self.y)
+        if line_reading is not None:
+            pygame.draw.circle(window.screen,
+                               Colours.BLACK if line_reading else Colours.WHITE,
+                               [x_px, y_px], 2)
+
         # Rangefinder line.
         h_rad = math.radians(self.h)
         dx = math.sin(h_rad)
