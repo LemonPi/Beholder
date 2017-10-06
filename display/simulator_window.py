@@ -6,7 +6,7 @@ pygame.init()
 
 
 class SimulatorWindow(object):
-    def __init__(self, text='', size=1600, aspect_ratio=10 / 6, real_world_size=(10, 6)):
+    def __init__(self, text='', size=1600, aspect_ratio=8 / 4, real_world_size=(8, 4)):
         self.aspect_ratio = aspect_ratio
         self.real_world_size = real_world_size
         self.screen = pygame.display.set_mode([size, int(size / aspect_ratio)])

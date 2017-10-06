@@ -111,6 +111,7 @@ class World(Drawable):
                                         l2=((8 * Units.METERS_IN_A_FOOT, 0),
                                             (8 * Units.METERS_IN_A_FOOT, 4 * Units.METERS_IN_A_FOOT))))
 
+        # TODO: further optimize this by only running it on external walls of obstacles.
         for o_y, row in enumerate(self.maze):
             for o_x, cell in enumerate(row):
                 if cell:
@@ -158,8 +159,8 @@ class World(Drawable):
         if not self.is_free(x, y):
             return None
         return self.maze_localization_grid[
-            math.floor((x - Units.METERS_IN_A_FOOT) / (Units.METERS_IN_A_FOOT / 4)), math.floor(
-                (y - Units.METERS_IN_A_FOOT) / (Units.METERS_IN_A_FOOT / 4))]
+            math.floor(x / (Units.METERS_IN_A_FOOT / 4)),
+            math.floor(y / (Units.METERS_IN_A_FOOT / 4))]
 
     def get_width_m(self):
         return len(self.maze[0]) * Units.METERS_IN_A_FOOT

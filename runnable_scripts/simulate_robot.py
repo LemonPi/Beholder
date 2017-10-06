@@ -7,10 +7,10 @@ from display import SimulatorWindow, true_until_window_closed
 window = SimulatorWindow(text='Robot simulation')
 
 world = World()
-world.add_to_screen(window)
+world.add_to_window(window)
 
 robot = SimulatedRobot(world, x=1, y=1, h=0)
-robot.add_to_screen(window)
+robot.add_to_window(window)
 
 while true_until_window_closed():
     window.draw()

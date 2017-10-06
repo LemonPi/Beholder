@@ -9,14 +9,14 @@ from display import Drawable, draw_triangle
 
 
 class Particle(Drawable):
-    def __init__(self, world, x, y, h, w=1):
+    def __init__(self, world, x, y, h):
         super().__init__()
         self.world = world
 
         self.x = x
         self.y = y
         self.h = h
-        self.w = w
+        self.w = 0
 
     def __repr__(self):
         return "(%f, %f, w=%f)" % (self.x, self.y, self.w)
@@ -69,4 +69,7 @@ class Particle(Drawable):
         y_px = window.m_to_px(self.y)
 
         draw_triangle(window.screen, x_px, y_px, self.h, r=5, c=Colours.PARTICLE_COLOUR)
-        pygame.draw.circle(window.screen, Colours.GREEN if self.is_position_valid() else Colours.RED, [x_px, y_px], 2)
+        pygame.draw.circle(window.screen, Colours.GREEN, [x_px, y_px], int(self.w * 15))
+        pygame.draw.circle(window.screen,
+                           Colours.BLACK if self.world.get_line_reading(self.x, self.y) else Colours.WHITE,
+                           [x_px, y_px], 2)
