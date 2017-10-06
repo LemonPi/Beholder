@@ -10,20 +10,11 @@ from display import Drawable
 
 class World(Drawable):
     def __init__(self):
-        # Minimal version of the maze.
-        # self.maze = (
-        #     (0, 0, 0, 0, 1, 0, 1, 0),
-        #     (0, 0, 1, 0, 0, 0, 0, 0),
-        #     (0, 1, 0, 1, 1, 0, 1, 0),
-        #     (0, 0, 0, 0, 0, 0, 1, 0),
-        # )
         self.maze = (
-            (1, 1, 1, 1, 1, 1, 1, 1, 1, 1),
-            (1, 0, 0, 0, 0, 1, 0, 1, 0, 1),
-            (1, 0, 0, 1, 0, 0, 0, 0, 0, 1),
-            (1, 0, 1, 0, 1, 1, 0, 1, 0, 1),
-            (1, 0, 0, 0, 0, 0, 0, 1, 0, 1),
-            (1, 1, 1, 1, 1, 1, 1, 1, 1, 1)
+            (0, 0, 0, 0, 1, 0, 1, 0),
+            (0, 0, 1, 0, 0, 0, 0, 0),
+            (0, 1, 0, 1, 1, 0, 1, 0),
+            (0, 0, 0, 0, 0, 0, 1, 0),
         )
         self.localization_squares = {
             0: ((0, 1, 1, 0), (0, 0, 1, 0), (1, 0, 1, 1), (0, 0, 0, 0)),
@@ -61,7 +52,7 @@ class World(Drawable):
         }
         # (x, y) maps to colour (0=white, 1=black)
         self.maze_localization_grid = np.zeros([4 * 8, 4 * 4])
-        for block_num in range(31):
+        for block_num in range(max(self.localization_squares.keys()) + 1):
             if self.localization_squares[block_num] is None:
                 continue
             for block_row_num, block_row in enumerate(self.localization_squares[block_num]):
@@ -82,12 +73,11 @@ class World(Drawable):
                                      [x * box_size_px, y * box_size_px, box_size_px, box_size_px])
 
         code_size_px = window.m_to_px(Units.METERS_IN_A_FOOT) // 4
-        ox, oy = box_size_px, box_size_px
         for x in range(4 * 8):
             for y in range(4 * 4):
                 if self.maze_localization_grid[x, y]:
                     pygame.draw.rect(window.screen, Colours.GREY,
-                                     [ox + x * code_size_px, oy + y * code_size_px, code_size_px, code_size_px])
+                                     [x * code_size_px, y * code_size_px, code_size_px, code_size_px])
 
     def get_rangefinder_distance(self, x, y, h):
         """
@@ -100,9 +90,27 @@ class World(Drawable):
         if not self.is_free(x, y):
             return 0
 
-        # TODO: Optimize this!
-        # Loop through all obstacles and assume four edges for each.
         min_distance = math.inf
+        # For map edge:
+        # Top
+        min_distance = min(min_distance,
+                           get_distance(p=(x, y), h=h,
+                                        l2=((0, 0), (8 * Units.METERS_IN_A_FOOT, 0))))
+        # Bottom
+        min_distance = min(min_distance,
+                           get_distance(p=(x, y), h=h,
+                                        l2=((0, 4 * Units.METERS_IN_A_FOOT),
+                                            (8 * Units.METERS_IN_A_FOOT, 4 * Units.METERS_IN_A_FOOT))))
+        # Left
+        min_distance = min(min_distance,
+                           get_distance(p=(x, y), h=h,
+                                        l2=((0, 0), (0, 4 * Units.METERS_IN_A_FOOT))))
+        # Right
+        min_distance = min(min_distance,
+                           get_distance(p=(x, y), h=h,
+                                        l2=((8 * Units.METERS_IN_A_FOOT, 0),
+                                            (8 * Units.METERS_IN_A_FOOT, 4 * Units.METERS_IN_A_FOOT))))
+
         for o_y, row in enumerate(self.maze):
             for o_x, cell in enumerate(row):
                 if cell:
