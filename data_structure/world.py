@@ -100,6 +100,7 @@ class World(Drawable):
         if not self.is_free(x, y):
             return 0
 
+        # TODO: Optimize this!
         # Loop through all obstacles and assume four edges for each.
         min_distance = math.inf
         for o_y, row in enumerate(self.maze):
@@ -151,6 +152,12 @@ class World(Drawable):
         return self.maze_localization_grid[
             math.floor((x - Units.METERS_IN_A_FOOT) / (Units.METERS_IN_A_FOOT / 4)), math.floor(
                 (y - Units.METERS_IN_A_FOOT) / (Units.METERS_IN_A_FOOT / 4))]
+
+    def get_width_m(self):
+        return len(self.maze[0]) * Units.METERS_IN_A_FOOT
+
+    def get_height_m(self):
+        return len(self.maze) * Units.METERS_IN_A_FOOT
 
     def is_in(self, x, y):
         """

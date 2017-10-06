@@ -1,4 +1,5 @@
 import math
+import random
 
 import pygame
 
@@ -8,12 +9,9 @@ from display import Drawable, draw_triangle
 
 
 class Particle(Drawable):
-    def __init__(self, world, x, y, h, w=1, noisy=False):
+    def __init__(self, world, x, y, h, w=1):
         super().__init__()
         self.world = world
-        if noisy:
-            pass
-            # x, y, heading = add_some_noise(x, y, heading)
 
         self.x = x
         self.y = y
@@ -24,8 +22,19 @@ class Particle(Drawable):
         return "(%f, %f, w=%f)" % (self.x, self.y, self.w)
 
     @classmethod
-    def create_random(cls, count, maze):
-        return [cls(*maze.random_free_place()) for _ in range(0, count)]
+    def create_from(cls, particle, sigma_pos, sigma_h):
+        x = random.normalvariate(particle.x, sigma_pos)
+        y = random.normalvariate(particle.y, sigma_pos)
+        h = random.normalvariate(particle.h, sigma_h)
+        return Particle(world=particle.world, x=x, y=y, h=h)
+
+    @classmethod
+    def create_random(cls, world):
+        while True:
+            p = Particle(world, x=random.random() * world.get_width_m(), y=random.random() * world.get_height_m(),
+                         h=random.randint(0, 359))
+            if p.is_position_valid():
+                return p
 
     def get_expected_sensor_outputs(self):
         """
@@ -47,7 +56,7 @@ class Particle(Drawable):
         return self.world.is_free(self.x, self.y)
 
     def move(self, d_d, d_h):
-        self.h += d_h
+        self.h = (self.h + d_h) % 360
         h_rad = math.radians(self.h)
 
         dx = math.sin(h_rad)
