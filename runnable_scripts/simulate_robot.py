@@ -1,3 +1,4 @@
+import random
 import time
 
 from data_structure import World, SimulatedRobot
@@ -13,5 +14,7 @@ robot.add_to_screen(window)
 
 while true_until_window_closed():
     window.draw()
-    time.sleep(0.1)
-    robot.move(0.01, 1)
+    time.sleep(0.01)
+    while robot.get_expected_sensor_outputs().range < 0.05:
+        robot.move(0, random.randint(1, 359))
+    robot.move(0.01, 0)

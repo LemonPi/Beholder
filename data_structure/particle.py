@@ -3,6 +3,7 @@ import math
 import pygame
 
 from constants import Colours
+from data_structure.sensor_readings import SensorReadings
 from display import Drawable, draw_triangle
 
 
@@ -28,15 +29,11 @@ class Particle(Drawable):
 
     def get_expected_sensor_outputs(self):
         """
-        Returns a tuple of simulated sensor readings based on the particle's pose. (x_1, ... x_n)
+        Returns an object containing simulated sensor readings based on the particle's pose. (x_1, ... x_n)
         """
-        return (0,)
-
-    def _read_ultrasonic(self):
-        pass
-
-    def _read_ir(self):
-        pass
+        rangefinder_distance = self.world.get_rangefinder_distance(self.x, self.y, self.h)
+        line_reading = self.world.get_line_reading(self.x, self.y)
+        return SensorReadings(range=rangefinder_distance, floor=line_reading)
 
     def update_weight(self, sensors_robot):
         pass
