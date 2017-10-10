@@ -12,6 +12,15 @@ def cross(v, w):
     """
     return v[0] * w[1] - v[1] * w[0]
 
+def dot2d(v, w):
+    """
+    Returns the "two dimensional vector dot product."
+    :param v: The first vector in (x, y) form.
+    :param w: The second vector in (x, y) form.
+    :return:
+    """
+    return v[0] * w[0] + v[1] * w[1]
+
 
 # Implemented based on https://stackoverflow.com/questions/563198/how-do-you-detect-where-two-line-segments-intersect/565282#565282.
 def get_distance(p, h, l2):
@@ -35,10 +44,10 @@ def get_distance(p, h, l2):
 
     if r_cross_s == 0 and u == 0:
         # Lines are collinear.
-        r_dot_r = np.dot(r, r)
-        t0 = np.dot(q - p, r) / r_dot_r
+        r_dot_r = dot2d(r, r)
+        t0 = dot2d(q - p, r) / r_dot_r
         t0 = t0 if t0 >= 0 else math.inf
-        t1 = t0 + np.dot(s, r) / r_dot_r
+        t1 = t0 + dot2d(s, r) / r_dot_r
         t1 = t1 if t1 >= 0 else math.inf
         return min(t0, t1)
     if r_cross_s == 0 and u != 0:

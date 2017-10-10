@@ -1,16 +1,18 @@
 import math
 import random
+import numpy as np
 
 import pygame
 
 from constants import Colours
-from data_structure.sensor_readings import SensorReadings
 from display import Drawable, draw_triangle
 
 
 class Particle(Drawable):
-    def __init__(self, world, x, y, h):
+    def __init__(self, robot_spec, world, x, y, h):
         super().__init__()
+        self.robot_spec = robot_spec
+
         self.world = world
 
         self.x = x
@@ -26,12 +28,12 @@ class Particle(Drawable):
         x = random.normalvariate(particle.x, sigma_pos)
         y = random.normalvariate(particle.y, sigma_pos)
         h = random.normalvariate(particle.h, sigma_h)
-        return Particle(world=particle.world, x=x, y=y, h=h)
+        return Particle(robot_spec=particle.robot_spec, world=particle.world, x=x, y=y, h=h)
 
     @classmethod
-    def create_random(cls, world):
+    def create_random(cls, robot_spec, world):
         while True:
-            p = Particle(world, x=random.random() * world.get_width_m(), y=random.random() * world.get_height_m(),
+            p = Particle(robot_spec, world, x=random.random() * world.get_width_m(), y=random.random() * world.get_height_m(),
                          h=random.randint(0, 359))
             if p.is_position_valid():
                 return p
@@ -40,9 +42,14 @@ class Particle(Drawable):
         """
         Returns an object containing simulated sensor readings based on the particle's pose. (x_1, ... x_n)
         """
-        rangefinder_distance = self.world.get_rangefinder_distance(self.x, self.y, self.h)
-        line_reading = self.world.get_line_reading(self.x, self.y)
-        return SensorReadings(range=rangefinder_distance, floor=line_reading)
+        raw_readings = [s.get_sensor_reading(self.world, self.x, self.y, self.h) for s in self.robot_spec.sensors]
+
+        # rangefinder_distance = self.world.get_rangefinder_distance(self.x, self.y, self.h)
+        # line_reading = self.world.get_line_reading(self.x, self.y)
+        return self.robot_spec.SensorReadingTuple(*raw_readings)
+    
+    def get_sensor_reading_probabilities(self, robot_readings, sensor_readings):
+        return np.prod([s.get_reading_probability(truth, r) for truth,r,s in zip(robot_readings, sensor_readings, self.robot_spec.sensors)])
 
     def update_weight(self, sensors_robot):
         pass
@@ -69,7 +76,7 @@ class Particle(Drawable):
         y_px = window.m_to_px(self.y)
 
         draw_triangle(window.screen, x_px, y_px, self.h, r=5, c=Colours.PARTICLE_COLOUR)
-        pygame.draw.circle(window.screen, Colours.GREEN, [x_px, y_px], int(self.w * 15))
-        pygame.draw.circle(window.screen,
-                           Colours.BLACK if self.world.get_line_reading(self.x, self.y) else Colours.WHITE,
-                           [x_px, y_px], 2)
+        # pygame.draw.circle(window.screen, Colours.GREEN, [x_px, y_px], int(self.w * 15))
+        # pygame.draw.circle(window.screen,
+        #                    Colours.BLACK if self.world.get_line_reading(self.x, self.y) else Colours.WHITE,
+        #                    [x_px, y_px], 2)
