@@ -4,6 +4,7 @@ import math
 
 from constants import Colours
 
+
 # ---- UTILS
 def w_gauss(a, b, sigma):
     # This is just a gaussian kernel I pulled out of my hat, to transform
@@ -11,6 +12,7 @@ def w_gauss(a, b, sigma):
     error = a - b
     g = np.exp(-(error ** 2 / (2 * sigma ** 2)))
     return g
+
 
 # ---- CLASSES
 class Sensor(object):
@@ -23,8 +25,15 @@ class Sensor(object):
     
     def get_sensor_reading(self, world, pos, heading):
         raise NotImplementedError
-    
+
     def get_reading_probability(self, absolute, reading):
+        """
+        Get likelihood of sensing a reading given what a perfect
+        reading should read and what the sensor's error is.
+        :param absolute: An ideal sensor reading from current pose
+        :param reading: A noisy sensor reading
+        :return: Likelihood of reading
+        """
         raise NotImplementedError
 
     def draw(self, window, pos, heading, reading):
@@ -53,6 +62,7 @@ class DistanceSensor(Sensor):
         pygame.draw.line(window.screen, Colours.BLUE, (window.m_to_px(pos[0]), window.m_to_px(pos[1])),
                          (window.m_to_px(pos[0] + reading * dx),
                           window.m_to_px(pos[1] + reading * dy)))
+
 
 class FloorSensor(Sensor):
     def __init__(self, pos):
