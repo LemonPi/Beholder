@@ -150,17 +150,17 @@ class World(Drawable):
                                                     l2=((o_x_1, o_y_1), (o_x_2, o_y_2))))
         return min_distance
 
-    def get_line_reading(self, x, y):
+    def get_line_reading(self, pos):
         """
         :param x: Given in real-world units (meters)
         :param y: Given in real-world units (meters)
         :return: True if the space has a dark-coloured floor.
         """
-        if not self.is_free(x, y):
+        if not self.is_free(pos[0], pos[1]):
             return None
         return self.maze_localization_grid[
-            math.floor(x / (Units.METERS_IN_A_FOOT / 4)),
-            math.floor(y / (Units.METERS_IN_A_FOOT / 4))]
+            math.floor(pos[0] / (Units.METERS_IN_A_FOOT / 4)),
+            math.floor(pos[1] / (Units.METERS_IN_A_FOOT / 4))]
 
     def get_width_m(self):
         return len(self.maze[0]) * Units.METERS_IN_A_FOOT

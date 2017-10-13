@@ -3,8 +3,7 @@ import math
 import pygame
 
 
-def draw_triangle(screen, x, y, h, r, c, aspect_ratio=3, com_triangle=2 / 3, fill=False):
-    h_rad = math.radians(h)
+def draw_triangle(screen, x, y, h_rad, r, c, aspect_ratio=3, com_triangle=2 / 3, fill=False):
     dx = math.sin(h_rad)
     dy = -math.cos(h_rad)
     px = -dy

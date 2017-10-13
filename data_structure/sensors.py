@@ -14,59 +14,58 @@ def w_gauss(a, b, sigma):
 
 # ---- CLASSES
 class Sensor(object):
-    def __init__(self, x, y):
+    def __init__(self, pos):
         # Position relative to the robot origin
-        self.x = x
-        self.y = y
+        self.pos = pos
 
-    def get_position(self, x, y, heading):
+    def get_position(self, pos, heading):
         pass
     
-    def get_sensor_reading(self, world, x, y, heading):
+    def get_sensor_reading(self, world, pos, heading):
         raise NotImplementedError
     
     def get_reading_probability(self, absolute, reading):
         raise NotImplementedError
 
-    def draw(self, window, x, y, heading, reading):
+    def draw(self, window, pos, heading, reading):
         raise NotImplementedError
 
 
 class DistanceSensor(Sensor):
-    def __init__(self, x, y, orientation, sigma=0.1):
-        super().__init__(x,y)
+    def __init__(self, pos, orientation, sigma=0.1):
+        super().__init__(pos)
         # Orientation relative to robot
         self.orientation = orientation
 
         self.sigma = sigma
 
-    def get_sensor_reading(self, world, x, y, heading):
-        return world.get_rangefinder_distance(x, y, heading + self.orientation)
+    def get_sensor_reading(self, world, pos, heading):
+        return world.get_rangefinder_distance(float(pos[0]), float(pos[1]), heading + self.orientation)
     
     def get_reading_probability(self, absolute, reading):
         return w_gauss(absolute, reading, self.sigma)
 
-    def draw(self, window, x, y, heading, reading):
-        h_rad = math.radians(heading + self.orientation)
-        dx = math.sin(h_rad)
-        dy = -math.cos(h_rad)
+    def draw(self, window, pos, heading, reading):
+        h = heading + self.orientation
+        dx = math.sin(h)
+        dy = -math.cos(h)
 
-        pygame.draw.line(window.screen, Colours.BLUE, (window.m_to_px(x), window.m_to_px(y)),
-                         (window.m_to_px(x + reading * dx),
-                          window.m_to_px(y + reading * dy)))
+        pygame.draw.line(window.screen, Colours.BLUE, (window.m_to_px(pos[0]), window.m_to_px(pos[1])),
+                         (window.m_to_px(pos[0] + reading * dx),
+                          window.m_to_px(pos[1] + reading * dy)))
 
 class FloorSensor(Sensor):
-    def __init__(self, x, y):
-        super().__init__(x,y)
+    def __init__(self, pos):
+        super().__init__(pos)
 
-    def get_sensor_reading(self, world, x, y, heading):
-        return world.get_line_reading(x, y)
+    def get_sensor_reading(self, world, pos, heading):
+        return world.get_line_reading(pos)
     
     def get_reading_probability(self, absolute, reading):
         return w_gauss(absolute, reading, 1)
 
-    def draw(self, window, x, y, heading, reading):
+    def draw(self, window, pos, heading, reading):
         if reading is not None:
             pygame.draw.circle(window.screen,
                                Colours.BLACK if reading else Colours.WHITE,
-                               [window.m_to_px(x), window.m_to_px(y)], 2)
+                               [window.m_to_px(pos[0]), window.m_to_px(pos[1])], 2)

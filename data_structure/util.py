@@ -32,8 +32,9 @@ def get_distance(p, h, l2):
     :return: distance from p, at heading h, to intersection with l2
     """
     p = np.array(p)
-    h_rad = math.radians(h)
-    r = np.array([math.sin(h_rad), -math.cos(h_rad)])
+    
+    # TODO: Figure out how to vectorize this
+    r = np.array([math.sin(h), -math.cos(h)])
 
     q = np.array(l2[0])
     s = np.array(l2[1]) - q
@@ -63,6 +64,14 @@ def get_distance(p, h, l2):
 
     # No intersection
     return math.inf
+
+def vectorized_raycast(p, h, segment_p1, segment_p2):
+    q = segment_p1
+    s = segment_p2 - segment_p1
+
+    r_cross_s = np.cross(r, s)
+    t = np.cross(q - p, s)
+    u = np.cross(q - p, r)
 
 
 if __name__ == '__main__':

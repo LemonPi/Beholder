@@ -1,4 +1,5 @@
 import pygame
+import numpy as np
 
 from constants import Colours, Units
 
@@ -28,7 +29,7 @@ class SimulatorWindow(object):
     def m_to_px(self, m):
         width, height = self.screen.get_size()
         m_to_px_ratio = width / (Units.METERS_IN_A_FOOT * self.real_world_size[0])
-        return round(m * m_to_px_ratio)
+        return np.rint(m * m_to_px_ratio).astype(int)
 
     def draw(self):
         # Clear the screen and set the screen background
@@ -36,7 +37,3 @@ class SimulatorWindow(object):
 
         for uid, d in self.drawables.items():
             d.draw(self)
-
-        # Go ahead and update the screen with what we've drawn.
-        # This MUST happen after all the other drawing commands.
-        pygame.display.flip()

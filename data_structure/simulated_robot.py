@@ -1,27 +1,36 @@
 import math
 
 import pygame
+import numpy as np
 
 from constants import Colours
 from data_structure import Particle
-from display import draw_triangle
+from display import Drawable, draw_triangle
 
 
-class SimulatedRobot(Particle):
-    def __init__(self, robot_spec, world, x, y, h):
-        super().__init__(robot_spec, world, x, y, h)
+class SimulatedRobot(Drawable):
+    def __init__(self, robot_spec, world, pos, h):
+        self.robot_spec = robot_spec
+        self.world = world
+        self.pos = pos
+        self.h = h
+
+    def get_expected_sensor_outputs(self):
+        return Particle.get_expected_sensor_outputs(self.robot_spec, self.world, self.pos, self.h)
+
+    def move(self, d_d, d_h):
+        self.pos, self.h = Particle.move(self.pos, self.h, d_d, d_h)
 
     def draw(self, window):
-        x_px = window.m_to_px(self.x)
-        y_px = window.m_to_px(self.y)
+        pos_px = window.m_to_px(self.pos)
 
         # Robot
-        draw_triangle(window.screen, x_px, y_px, self.h, r=7, c=Colours.ROBOT_COLOUR, fill=True)
+        draw_triangle(window.screen, int(pos_px[0]), int(pos_px[1]), self.h, r=7, c=Colours.ROBOT_COLOUR, fill=True)
 
-        readings = self.get_expected_sensor_outputs()
+        readings = Particle.get_expected_sensor_outputs(self.robot_spec, self.world, self.pos, self.h)
 
         for reading, sensor in zip(readings, self.robot_spec.sensors):
-            sensor.draw(window, self.x, self.y, self.h, reading)
+            sensor.draw(window, self.pos, self.h, reading)
 
         # # Line follower indicator.
         # line_reading = readings.floor
