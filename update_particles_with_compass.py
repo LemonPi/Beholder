@@ -15,7 +15,7 @@ DRAW_CHANCE = 0.1
 
 # ---- PARTICLE FILTER PARAMS
 N_PARTICLES = 1000
-POS_SIGMA = 0.03
+POS_SIGMA = 0.05
 H_SIGMA = 0.1
 
 def update_particle_weights(robot, world, pos, h, particle_readings):
@@ -43,7 +43,7 @@ window = SimulatorWindow(text='Robot simulation')
 world = World()
 world.add_to_window(window)
 
-robot = SimulatedRobot(robot_spec, world, np.array([[1],[0.2]]), h=np.array([np.pi/4]))
+robot = SimulatedRobot(robot_spec, world, np.array([[1],[1]]) * Units.METERS_IN_A_FOOT, h=np.array([random.random()*np.pi*2]))
 
 scale_mat = np.array([[8 * Units.METERS_IN_A_FOOT, 0], [0, 4 * Units.METERS_IN_A_FOOT]])
 

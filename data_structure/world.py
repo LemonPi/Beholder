@@ -16,6 +16,27 @@ class World(Drawable):
             (0, 1, 0, 1, 1, 0, 1, 0),
             (0, 0, 0, 0, 0, 0, 1, 0),
         )
+        self.walls = (
+            ((1,2),(5,2)),     # CENTER OBSTACLE
+            ((1,2),(1,3)), 
+            ((1,3),(2,3)), 
+            ((2,3),(2,1)), 
+            ((2,1),(3,1)), 
+            ((1,3),(2,3)),
+            ((3,1),(3,3)),
+            ((3,1),(3,3)),
+            ((3,3),(5,3)),
+            ((3,2),(5,2)),
+            ((5,2),(5,3)),
+            ((4,0),(4,1)),      # CENTER TOP OBSTACLE
+            ((4,1),(5,1)),
+            ((5,1),(5,0)),
+            ((6,0),(6,1)),      # TOP RIGHT OBSTACLE
+            ((6,1),(7,1)),
+            ((7,1),(7,0)),
+            ((6,2),(6,4)),      # BOTTOM RIGHT OBSTACLE
+            ((6,2),(7,2)),
+            ((7,2),(7,4)))
         self.localization_squares = {
             0: ((0, 1, 1, 0), (0, 0, 1, 0), (1, 0, 1, 1), (0, 0, 0, 0)),
             1: ((0, 1, 0, 1), (0, 0, 1, 0), (0, 0, 1, 1), (1, 0, 1, 0)),
@@ -112,42 +133,51 @@ class World(Drawable):
                                             (8 * Units.METERS_IN_A_FOOT, 4 * Units.METERS_IN_A_FOOT))))
 
         # TODO: further optimize this by only running it on external walls of obstacles.
-        for o_y, row in enumerate(self.maze):
-            for o_x, cell in enumerate(row):
-                if cell:
-                    # For each obstacle:
-                    # Top
-                    o_x_1 = o_x * Units.METERS_IN_A_FOOT
-                    o_y_1 = o_y * Units.METERS_IN_A_FOOT
-                    o_x_2 = (o_x + 1) * Units.METERS_IN_A_FOOT
-                    o_y_2 = o_y * Units.METERS_IN_A_FOOT
-                    min_distance = min(min_distance,
-                                       get_distance(p=(x, y), h=h,
-                                                    l2=((o_x_1, o_y_1), (o_x_2, o_y_2))))
-                    # Bottom
-                    o_x_1 = o_x * Units.METERS_IN_A_FOOT
-                    o_y_1 = (o_y + 1) * Units.METERS_IN_A_FOOT
-                    o_x_2 = (o_x + 1) * Units.METERS_IN_A_FOOT
-                    o_y_2 = (o_y + 1) * Units.METERS_IN_A_FOOT
-                    min_distance = min(min_distance,
-                                       get_distance(p=(x, y), h=h,
-                                                    l2=((o_x_1, o_y_1), (o_x_2, o_y_2))))
-                    # Left
-                    o_x_1 = o_x * Units.METERS_IN_A_FOOT
-                    o_y_1 = o_y * Units.METERS_IN_A_FOOT
-                    o_x_2 = o_x * Units.METERS_IN_A_FOOT
-                    o_y_2 = (o_y + 1) * Units.METERS_IN_A_FOOT
-                    min_distance = min(min_distance,
-                                       get_distance(p=(x, y), h=h,
-                                                    l2=((o_x_1, o_y_1), (o_x_2, o_y_2))))
-                    # Right
-                    o_x_1 = (o_x + 1) * Units.METERS_IN_A_FOOT
-                    o_y_1 = o_y * Units.METERS_IN_A_FOOT
-                    o_x_2 = (o_x + 1) * Units.METERS_IN_A_FOOT
-                    o_y_2 = (o_y + 1) * Units.METERS_IN_A_FOOT
-                    min_distance = min(min_distance,
-                                       get_distance(p=(x, y), h=h,
-                                                    l2=((o_x_1, o_y_1), (o_x_2, o_y_2))))
+        # for o_y, row in enumerate(self.maze):
+        #     for o_x, cell in enumerate(row):
+        #         if cell:
+        #             # For each obstacle:
+        #             # Top
+        #             o_x_1 = o_x * Units.METERS_IN_A_FOOT
+        #             o_y_1 = o_y * Units.METERS_IN_A_FOOT
+        #             o_x_2 = (o_x + 1) * Units.METERS_IN_A_FOOT
+        #             o_y_2 = o_y * Units.METERS_IN_A_FOOT
+        #             min_distance = min(min_distance,
+        #                                get_distance(p=(x, y), h=h,
+        #                                             l2=((o_x_1, o_y_1), (o_x_2, o_y_2))))
+        #             # Bottom
+        #             o_x_1 = o_x * Units.METERS_IN_A_FOOT
+        #             o_y_1 = (o_y + 1) * Units.METERS_IN_A_FOOT
+        #             o_x_2 = (o_x + 1) * Units.METERS_IN_A_FOOT
+        #             o_y_2 = (o_y + 1) * Units.METERS_IN_A_FOOT
+        #             min_distance = min(min_distance,
+        #                                get_distance(p=(x, y), h=h,
+        #                                             l2=((o_x_1, o_y_1), (o_x_2, o_y_2))))
+        #             # Left
+        #             o_x_1 = o_x * Units.METERS_IN_A_FOOT
+        #             o_y_1 = o_y * Units.METERS_IN_A_FOOT
+        #             o_x_2 = o_x * Units.METERS_IN_A_FOOT
+        #             o_y_2 = (o_y + 1) * Units.METERS_IN_A_FOOT
+        #             min_distance = min(min_distance,
+        #                                get_distance(p=(x, y), h=h,
+        #                                             l2=((o_x_1, o_y_1), (o_x_2, o_y_2))))
+        #             # Right
+        #             o_x_1 = (o_x + 1) * Units.METERS_IN_A_FOOT
+        #             o_y_1 = o_y * Units.METERS_IN_A_FOOT
+        #             o_x_2 = (o_x + 1) * Units.METERS_IN_A_FOOT
+        #             o_y_2 = (o_y + 1) * Units.METERS_IN_A_FOOT
+        #             min_distance = min(min_distance,
+        #                                get_distance(p=(x, y), h=h,
+        #                                             l2=((o_x_1, o_y_1), (o_x_2, o_y_2))))
+
+        for p1,p2 in self.walls:
+            p1s = tuple((s * Units.METERS_IN_A_FOOT) for s in p1)
+            p2s = tuple((s * Units.METERS_IN_A_FOOT) for s in p2)
+            min_distance = min(min_distance,
+                                get_distance(p=(x, y), h=h,
+                                            l2=(p1s, p2s)))
+
+
         return min_distance
 
     def get_line_reading(self, pos):
