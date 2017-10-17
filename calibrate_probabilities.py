@@ -21,7 +21,7 @@ window = SimulatorWindow(text='Robot simulation')
 world = World()
 world.add_to_window(window)
 
-robot = SimulatedRobot(world, x=1, y=1, h=0)
+robot = SimulatedRobot(world, pos=[1, 1], h=0)
 robot.add_to_window(window)
 
 particles = []
