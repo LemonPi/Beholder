@@ -1,7 +1,6 @@
-import math
 import random
-import numpy as np
 
+import numpy as np
 import pygame
 
 from constants import Colours
@@ -9,7 +8,6 @@ from display import draw_triangle
 
 
 class Particle(object):
-    
     @classmethod
     def string_rep(cls, pos, w):
         return "(%f, %f, w=%f)" % (pos[0], pos[1], w)
@@ -24,7 +22,8 @@ class Particle(object):
     @classmethod
     def create_random(cls, robot_spec, world):
         while True:
-            p = Particle(robot_spec, world, x=random.random() * world.get_width_m(), y=random.random() * world.get_height_m(),
+            p = Particle(robot_spec, world, x=random.random() * world.get_width_m(),
+                         y=random.random() * world.get_height_m(),
                          h=random.randint(0, 359))
             if p.is_position_valid():
                 return p
@@ -37,10 +36,11 @@ class Particle(object):
         raw_readings = [s.get_sensor_reading(world, pos, h) for s in robot_spec.sensors]
 
         return robot_spec.SensorReadingTuple(*raw_readings)
-    
+
     @classmethod
     def get_sensor_reading_probabilities(cls, robot_spec, robot_readings, sensor_readings):
-        return np.prod([s.get_reading_probability(truth, r) for truth,r,s in zip(robot_readings, sensor_readings, robot_spec.sensors)])
+        return np.prod([s.get_reading_probability(truth, r) for truth, r, s in
+                        zip(robot_readings, sensor_readings, robot_spec.sensors)])
 
     @classmethod
     def is_position_valid(cls, world, pos):
@@ -49,17 +49,30 @@ class Particle(object):
     @classmethod
     def move(cls, pos, h, d_d, d_h):
         h_n = h + d_h
-        pos_n = pos + np.array([np.sin(h), -np.cos(h)])*d_d
+        pos_n = pos + np.array([np.sin(h), -np.cos(h)]) * d_d
 
         return pos_n, h_n
 
     @classmethod
-    def draw(cls, window, pos, h):
+    def draw(cls, window, pos, h, colour=None):
+        colour = Colours.PARTICLE_COLOUR if colour is None else colour
+
         x_px = window.m_to_px(pos[0])
         y_px = window.m_to_px(pos[1])
 
-        draw_triangle(window.screen, x_px, y_px, h, r=5, c=Colours.PARTICLE_COLOUR)
+        draw_triangle(window.screen, x_px, y_px, h, r=5, c=colour)
         # pygame.draw.circle(window.screen, Colours.GREEN, [x_px, y_px], int(self.w * 15))
         # pygame.draw.circle(window.screen,
         #                    Colours.BLACK if self.world.get_line_reading(self.x, self.y) else Colours.WHITE,
         #                    [x_px, y_px], 2)
+
+    @classmethod
+    def draw_com(cls, window, com_pos, com_h, com_uncertainty):
+        circle_pos = window.m_to_px(com_pos)
+        circle_radius = window.m_to_px(np.mean(1 / com_uncertainty))
+
+        # TODO(wheung): At some point, figure out if this takes any signficant amount of time.
+        s = pygame.Surface((circle_radius * 2, circle_radius * 2), flags=pygame.SRCALPHA)
+        pygame.draw.circle(s, Colours.COM_UNCERTAINTY, [circle_radius, circle_radius], circle_radius)
+        window.screen.blit(s, (circle_pos - circle_radius, circle_pos - circle_radius))
+        Particle.draw(window, com_pos, com_h, colour=Colours.COM_COLOUR)

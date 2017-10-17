@@ -11,3 +11,5 @@ class Colours(object):
     WALL_COLOUR = BLACK
     ROBOT_COLOUR = BLUE
     PARTICLE_COLOUR = RED
+    COM_UNCERTAINTY = (*(*GREEN,), 128)
+    COM_COLOUR = GREEN
