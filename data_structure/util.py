@@ -1,6 +1,7 @@
 import math
 
 import numpy as np
+np.seterr(divide='ignore', invalid='ignore')
 
 
 def cross(v, w):
@@ -65,8 +66,7 @@ def get_distance(p, h, l2):
     # No intersection
     return math.inf
 
-# Implemented based on https://stackoverflow.com/questions/563198/how-do-you-detect-where-two-line-segments-intersect/565282#565282.
-def get_distance_rectalinear(p, h, l2):
+def get_distance_rectilinear(p, h, l2):
     """
     Gets the distance along the ray starting from p, with heading h to the intersection with line segment l2.
     :param p: starting points
@@ -78,32 +78,36 @@ def get_distance_rectalinear(p, h, l2):
     n = p.shape[1]
     m = l2.shape[2]
 
-    print('p', p.shape, 'w', l2.shape)
+    #print('p', p.shape, 'w', l2.shape)
 
     # p elem R(2xn)
     # l2 elem R(2x2xm), m is the number of line segments
     delta = l2[:, 1] - l2[:, 0]
-    dir_wall = delta / np.sum(delta, axis=0)
-    dir_perp = 1 - dir_wall    # (2xm)   
+    dir_wall = delta / np.sum(delta, axis=0) # (2xm)
+    dir_perp = 1 - dir_wall    # (2xm)
+
+    w0 = l2[:, 0]
     
-    p_l = np.expand_dims(p, axis=1) - np.expand_dims(l2[:, 0], axis=2)   # (2xmxn)
-    p_l_perp = np.sum(np.transpose(np.multiply(np.transpose(dir_perp), np.transpose(p_l))), axis=0)  # (mxn)
-    
-    p_l_parallel = np.sum(np.transpose(np.multiply(np.transpose(dir_wall), np.transpose(p_l))), axis=0)  # (mxn)
-    delta_parallel = np.sum(np.transpose(np.multiply(np.transpose(dir_wall), np.transpose(delta))), axis=0)  # (mxn)
+    p_l = np.expand_dims(w0, axis=2) - np.expand_dims(p, axis=1)    # (2xmxn)
+    p_l_perp = np.sum(np.transpose(np.multiply(np.transpose(dir_perp), np.transpose(p_l))), axis=0, keepdims=False)  # (mxn)
 
     r = np.array([np.sin(h), np.cos(h)])    # (2xn)
     
-    dist_mat = np.divide(p_l_perp, np.transpose(dir_perp) @ r)   # (mxn)
-
+    dist_mat = np.divide(p_l_perp, np.transpose(dir_wall) @ r)   # (mxn)
+    
     # Determine whether the crossing is actually at the right spot
+    p_l_parallel = np.sum(np.transpose(np.multiply(np.transpose(dir_wall), np.transpose(p_l))), axis=0)  # (mxn)
+    delta_parallel = np.transpose(np.sum(delta, axis=0, keepdims=True))  # (m)
+
     zero_dist = np.zeros_like(p_l_parallel)
     intersects_pos = np.logical_and(np.greater_equal(p_l_parallel, zero_dist), np.less_equal(p_l_parallel, delta_parallel))
-    intersects_neg = np.logical_and(np.less_equal(p_l_parallel, zero_dist), np.greater_equal(p_l_parallel, delta_parallel))
+    intersects_neg = np.logical_and(np.less_equal(p_l_parallel, zero_dist), np.greater_equal(p_l_parallel, -delta_parallel))
     intersects = np.logical_or(intersects_pos, intersects_neg)
-    print(l2)
-
+    
+    # Make all non-intersecting distances inf
     dist_mat[intersects == 0] = np.inf
+    dist_mat[dist_mat < 0] = np.inf
+    dist_mat[dist_mat > 10] = np.inf
 
     # Min distances accross wall axis to find the smallest distance
     min_dists = np.min(dist_mat, axis = 0)
@@ -122,9 +126,9 @@ def vectorized_raycast(p, h, segment_p1, segment_p2):
 if __name__ == '__main__':
     # Test cases
     # Should find an intersection.
-    # assert (get_distance([0, 0], 0, [[-1, -3], [10, -3]]) - 3) < 1E-10
-    # assert (get_distance([0, 0], 180, [[-1, 10], [10, 10]]) - 10) < 1E-10
-    # assert (get_distance([0, 0], 90, [[5, -1], [5, 10]]) - 5) < 1E-10
+    #assert (get_distance([0, 0], 0, [[-1, -3], [10, -3]]) - 3) < 1E-10
+    #assert (get_distance([0, 0], 180, [[-1, 10], [10, 10]]) - 10) < 1E-10
+    #assert (get_distance([0, 0], 90, [[5, -1], [5, 10]]) - 5) < 1E-10
 
     # # Make sure directionality works.
     # assert get_distance([0, 0], 0, [[-1, 10], [10, 10]]) == math.inf
@@ -153,6 +157,14 @@ if __name__ == '__main__':
     particle_list = [[0, 0]]*N
     
     particles = np.transpose(np.array(particle_list))
-    headings = np.array([np.pi/4,]*N)
-    walls = np.expand_dims(np.transpose(np.array(wall_list)), axis=2)
-    print(get_distance_rectalinear(particles, headings, walls))
+    headings = np.array([0,]*N)
+    walls = np.transpose(np.array(wall_list))
+    print(get_distance_rectilinear(particles, headings, walls))
+
+    # NO INTERSECTION
+    particle_list = [[0, 0]]
+    
+    particles = np.transpose(np.array(particle_list))
+    headings = np.array([np.pi,])
+    walls = np.expand_dims(np.transpose(np.array([[-1, -5], [-1, 5]])), axis=2)
+    print(get_distance_rectilinear(particles, headings, walls))
