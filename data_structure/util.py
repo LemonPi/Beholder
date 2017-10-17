@@ -65,6 +65,51 @@ def get_distance(p, h, l2):
     # No intersection
     return math.inf
 
+# Implemented based on https://stackoverflow.com/questions/563198/how-do-you-detect-where-two-line-segments-intersect/565282#565282.
+def get_distance_rectalinear(p, h, l2):
+    """
+    Gets the distance along the ray starting from p, with heading h to the intersection with line segment l2.
+    :param p: starting points
+    :param h: headings
+    :param p1: target line segments
+    :return: distance from p, at heading h, to intersection with l2
+    """
+
+    n = p.shape[1]
+    m = l2.shape[2]
+
+    print('p', p.shape, 'w', l2.shape)
+
+    # p elem R(2xn)
+    # l2 elem R(2x2xm), m is the number of line segments
+    delta = l2[:, 1] - l2[:, 0]
+    dir_wall = delta / np.sum(delta, axis=0)
+    dir_perp = 1 - dir_wall    # (2xm)   
+    
+    p_l = np.expand_dims(p, axis=1) - np.expand_dims(l2[:, 0], axis=2)   # (2xmxn)
+    p_l_perp = np.sum(np.transpose(np.multiply(np.transpose(dir_perp), np.transpose(p_l))), axis=0)  # (mxn)
+    
+    p_l_parallel = np.sum(np.transpose(np.multiply(np.transpose(dir_wall), np.transpose(p_l))), axis=0)  # (mxn)
+    delta_parallel = np.sum(np.transpose(np.multiply(np.transpose(dir_wall), np.transpose(delta))), axis=0)  # (mxn)
+
+    r = np.array([np.sin(h), np.cos(h)])    # (2xn)
+    
+    dist_mat = np.divide(p_l_perp, np.transpose(dir_perp) @ r)   # (mxn)
+
+    # Determine whether the crossing is actually at the right spot
+    zero_dist = np.zeros_like(p_l_parallel)
+    intersects_pos = np.logical_and(np.greater_equal(p_l_parallel, zero_dist), np.less_equal(p_l_parallel, delta_parallel))
+    intersects_neg = np.logical_and(np.less_equal(p_l_parallel, zero_dist), np.greater_equal(p_l_parallel, delta_parallel))
+    intersects = np.logical_or(intersects_pos, intersects_neg)
+    print(l2)
+
+    dist_mat[intersects == 0] = np.inf
+
+    # Min distances accross wall axis to find the smallest distance
+    min_dists = np.min(dist_mat, axis = 0)
+
+    return min_dists
+
 def vectorized_raycast(p, h, segment_p1, segment_p2):
     q = segment_p1
     s = segment_p2 - segment_p1
@@ -77,26 +122,37 @@ def vectorized_raycast(p, h, segment_p1, segment_p2):
 if __name__ == '__main__':
     # Test cases
     # Should find an intersection.
-    assert (get_distance([0, 0], 0, [[-1, -3], [10, -3]]) - 3) < 1E-10
-    assert (get_distance([0, 0], 180, [[-1, 10], [10, 10]]) - 10) < 1E-10
-    assert (get_distance([0, 0], 90, [[5, -1], [5, 10]]) - 5) < 1E-10
+    # assert (get_distance([0, 0], 0, [[-1, -3], [10, -3]]) - 3) < 1E-10
+    # assert (get_distance([0, 0], 180, [[-1, 10], [10, 10]]) - 10) < 1E-10
+    # assert (get_distance([0, 0], 90, [[5, -1], [5, 10]]) - 5) < 1E-10
 
-    # Make sure directionality works.
-    assert get_distance([0, 0], 0, [[-1, 10], [10, 10]]) == math.inf
-    assert get_distance([0, 0], 90, [[-1, 10], [10, 10]]) == math.inf
+    # # Make sure directionality works.
+    # assert get_distance([0, 0], 0, [[-1, 10], [10, 10]]) == math.inf
+    # assert get_distance([0, 0], 90, [[-1, 10], [10, 10]]) == math.inf
 
-    # No intersection.
-    assert get_distance([0, 0], 45, [[-1, 10], [10, 10]]) == math.inf
-    assert get_distance([0, 0], 90, [[-1, 10], [10, 10]]) == math.inf
+    # # No intersection.
+    # assert get_distance([0, 0], 45, [[-1, 10], [10, 10]]) == math.inf
+    # assert get_distance([0, 0], 90, [[-1, 10], [10, 10]]) == math.inf
 
-    # Parallel.
-    assert get_distance([0, 0], 0, [[-1, 10], [-1, 20]]) == math.inf
-    assert get_distance([0, 0], 90, [[10, 10], [-1, 10]]) == math.inf
+    # # Parallel.
+    # assert get_distance([0, 0], 0, [[-1, 10], [-1, 20]]) == math.inf
+    # assert get_distance([0, 0], 90, [[10, 10], [-1, 10]]) == math.inf
 
-    # Collinear.
-    # Intersecting.
-    assert (get_distance([0, 0], 0, [[0, -1], [0, -2]]) - 1) < 1E-10
-    assert (get_distance([0, 0], 0, [[0, -3], [0, -2]]) - 2) < 1E-10
-    # Not intersecting.
-    assert get_distance([0, 0], 180, [[0, -2], [0, -1]]) == math.inf
-    assert get_distance([0, 0], 180, [[0, -1], [0, -2]]) == math.inf
+    # # Collinear.
+    # # Intersecting.
+    # assert (get_distance([0, 0], 0, [[0, -1], [0, -2]]) - 1) < 1E-10
+    # assert (get_distance([0, 0], 0, [[0, -3], [0, -2]]) - 2) < 1E-10
+    # # Not intersecting.
+    # assert get_distance([0, 0], 180, [[0, -2], [0, -1]]) == math.inf
+    # assert get_distance([0, 0], 180, [[0, -1], [0, -2]]) == math.inf
+
+    # TEST RECTALINEAR CASE
+    N = 1
+    M = 10
+    wall_list = [[[i+1,-5], [i+1, 5]] for i in range(M)]
+    particle_list = [[0, 0]]*N
+    
+    particles = np.transpose(np.array(particle_list))
+    headings = np.array([np.pi/4,]*N)
+    walls = np.expand_dims(np.transpose(np.array(wall_list)), axis=2)
+    print(get_distance_rectalinear(particles, headings, walls))
