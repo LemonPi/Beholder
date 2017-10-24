@@ -8,12 +8,23 @@
  */
 class Robot {
     /**
-     * @brief LOGIC_PERIOD_MS the minimum time between the start of
+     * @brief Minimum time [ms] between the start of
      * run calls. Note that this assumes the time to execute run is
      * less than itself, as otherwise we get one cycle eating into
      * the time of the next one.
      */
     static constexpr auto LOGIC_PERIOD_MS = 20;
+    /**
+     * @brief Effective radius of the left wheel [m]
+     * TODO calibrate by driving straight?
+     */
+    static constexpr double WHEEL_RADIUS_LEFT_M = 50e-3;
+    static constexpr double WHEEL_RADIUS_RIGHT_M = 50e-3;
+
+    /**
+     * @brief Distance between the wheels [m]
+     */
+    static constexpr double BASE_LENGHT_M = 100e-3;
 
   public:
     // behaviour layers ordered in increasing priority
@@ -49,6 +60,12 @@ class Robot {
     void computeNavigate();
     void computeTurnInPlace();
     void computeAvoidBoundary();
+
+    /**
+     * @brief convert behaviour control's input to motor control and actuate
+     * motors
+     */
+    void controlMotors(const BehaviourControl& control);
 
     // general bookkeeping
     bool _on;

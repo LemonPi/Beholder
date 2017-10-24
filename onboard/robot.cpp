@@ -44,10 +44,25 @@ bool Robot::run() {
         return false;
     }
 
-    // TODO send the highest priority layer's speed and angle output to motor
-    // control
+    // actuate motors
+    controlMotors(_behaviours[_activeBehaviourId]);
 
     // only assign it if we're sure this run was successful
     _lastRunTime = now;
     return true;
+}
+
+void Robot::controlMotors(const BehaviourControl& control) {
+    // velocity is (VL + VR) / 2
+    // dheading/dt is (VL - VR) / baseLength
+    // so 2V = VL + VR, BL * H = VL - VR
+    // 2V + BL * H = 2 * VL
+    // VL = V + BL/2 * H
+    // VR = V - BL/2 * H
+    const auto vL = control.speed + control.heading * BASE_LENGTH_M / 2;
+    const auto vR = control.speed - control.heading * BASE_LENGTH_M / 2;
+
+    // TODO need to convert to angular velocities?
+    // v = wR so w = v/R
+    // TODO send to motors
 }
