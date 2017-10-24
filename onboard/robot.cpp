@@ -3,6 +3,9 @@
 #include "robot.h"
 
 Robot::Robot() : _on(false), _lastRunTime(0U) {
+    for (int b = 0; b < BehaviourId::NUM_BEHAVIOURS; ++b) {
+        _allowedBehaviours[b] = true;
+    }
 }
 
 void Robot::turnOn() {
@@ -10,6 +13,10 @@ void Robot::turnOn() {
 }
 void Robot::turnOff() {
     _on = false;
+}
+
+void Robot::setBehaviour(BehaviourId behaviourId, bool enable) {
+    _allowedBehaviours[behaviourId] = enable;
 }
 
 bool Robot::run() {
@@ -25,7 +32,17 @@ bool Robot::run() {
     // TODO loop through behaviour layers and see which ones want to take over
     // control
 
-    // TODO arbitrate by selecting the layer with highest priority
+    // arbitrate by selecting the layer with highest priority
+    _activeBehaviourId = BehaviourId::NUM_BEHAVIOURS;
+    for (int b = 0; b < BehaviourId::NUM_BEHAVIOURS; ++b) {
+        if (_behaviours[b].active) {
+            _activeBehaviourId = static_cast<BehaviourId>(b);
+        }
+    }
+    // nothing active so just wait?
+    if (_activeBehaviourId == BehaviourId::NUM_BEHAVIOURS) {
+        return false;
+    }
 
     // TODO send the highest priority layer's speed and angle output to motor
     // control

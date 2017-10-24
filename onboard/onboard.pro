@@ -8,4 +8,6 @@ SOURCES += \
 
 HEADERS += \
     onboard.ino \
-    robot.h
+    robot.h \
+    types.h \
+    behaviour_control.h
