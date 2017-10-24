@@ -2,6 +2,7 @@
 #define ROBOT_H
 
 #include "behaviour_control.h"
+#include "target.h"
 
 /**
  * @brief The class representing a single mobile robot entity
@@ -24,7 +25,10 @@ class Robot {
     /**
      * @brief Distance between the wheels [m]
      */
-    static constexpr double BASE_LENGHT_M = 100e-3;
+    static constexpr double BASE_LENGTH_M = 100e-3;
+
+    static constexpr auto MAX_NUM_TARGETS = 10;
+    static constexpr auto NO_TARGET = -1;
 
   public:
     // behaviour layers ordered in increasing priority
@@ -53,6 +57,13 @@ class Robot {
      */
     void setBehaviour(BehaviourId behaviourId, bool enable);
 
+    /**
+     * @brief Push another target to get to as the most immediate goal
+     * Note that targets are pushed and popped like a stack
+     * @param t
+     */
+    void pushTarget(Target t);
+
   private:
     // behaviour layer computations
     // each behaviour is not decoupled and requires information about other
@@ -62,10 +73,16 @@ class Robot {
     void computeAvoidBoundary();
 
     /**
-     * @brief convert behaviour control's input to motor control and actuate
+     * @brief Convert behaviour control's input to motor control and actuate
      * motors
      */
     void controlMotors(const BehaviourControl& control);
+
+    /**
+     * @brief Process next target to reach, activating and deactivating
+     * behaviours as necessary. Call after reaching current target.
+     */
+    void processNextTarget();
 
     // general bookkeeping
     bool _on;
@@ -75,6 +92,10 @@ class Robot {
     BehaviourControl _behaviours[BehaviourId::NUM_BEHAVIOURS];
     bool _allowedBehaviours[BehaviourId::NUM_BEHAVIOURS];
     BehaviourId _activeBehaviourId;
+
+    // target bookkeeping
+    Target _targets[MAX_NUM_TARGETS];
+    int _curTargetId;
 };
 
 #endif // ROBOT_H

@@ -10,4 +10,5 @@ HEADERS += \
     onboard.ino \
     robot.h \
     types.h \
-    behaviour_control.h
+    behaviour_control.h \
+    target.h

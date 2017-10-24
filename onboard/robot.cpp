@@ -2,7 +2,7 @@
 
 #include "robot.h"
 
-Robot::Robot() : _on(false), _lastRunTime(0U) {
+Robot::Robot() : _on(false), _lastRunTime(0U), _curTargetId(NO_TARGET) {
     for (int b = 0; b < BehaviourId::NUM_BEHAVIOURS; ++b) {
         _allowedBehaviours[b] = true;
     }
@@ -17,6 +17,15 @@ void Robot::turnOff() {
 
 void Robot::setBehaviour(BehaviourId behaviourId, bool enable) {
     _allowedBehaviours[behaviourId] = enable;
+}
+
+void Robot::pushTarget(Target t) {
+    // silently ignore if we're over the target limit
+    if (_curTargetId == MAX_NUM_TARGETS - 1) {
+        return;
+    }
+    _targets[++_curTargetId] = t;
+    _behaviours[BehaviourId::NAVIGATE].active = true;
 }
 
 bool Robot::run() {
@@ -35,7 +44,7 @@ bool Robot::run() {
     // arbitrate by selecting the layer with highest priority
     _activeBehaviourId = BehaviourId::NUM_BEHAVIOURS;
     for (int b = 0; b < BehaviourId::NUM_BEHAVIOURS; ++b) {
-        if (_behaviours[b].active) {
+        if (_allowedBehaviours[b] && _behaviours[b].active) {
             _activeBehaviourId = static_cast<BehaviourId>(b);
         }
     }
@@ -64,5 +73,24 @@ void Robot::controlMotors(const BehaviourControl& control) {
 
     // TODO need to convert to angular velocities?
     // v = wR so w = v/R
+    (void)vL;
+    (void)vR;
     // TODO send to motors
+}
+
+void Robot::processNextTarget() {
+    // should never call this function when out of targets
+    if (_curTargetId < 0) {
+        // TODO add debug serial printing
+        return;
+    }
+
+    --_curTargetId;
+
+    // if we're out of targets we can disable navigation
+    if (_curTargetId == NO_TARGET) {
+        _behaviours[BehaviourId::NAVIGATE].active = false;
+    }
+
+    // TODO gameplay logic
 }
