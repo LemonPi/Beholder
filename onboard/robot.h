@@ -14,7 +14,7 @@ class Robot {
      * less than itself, as otherwise we get one cycle eating into
      * the time of the next one.
      */
-    static constexpr auto LOGIC_PERIOD_MS = 20;
+    static constexpr auto LOGIC_PERIOD_MS = 100;
     /**
      * @brief Effective radius of the left wheel [m]
      * TODO calibrate by driving straight?
@@ -34,6 +34,7 @@ class Robot {
     // behaviour layers ordered in increasing priority
     enum BehaviourId {
         NAVIGATE = 0,
+        WALL_FOLLOW,
         TURN_IN_PLACE,
         AVOID_BOUNDARY,
         NUM_BEHAVIOURS
@@ -69,6 +70,7 @@ class Robot {
     // each behaviour is not decoupled and requires information about other
     // layers so we can't abstract the computation into their classes
     void computeNavigate();
+    void computeWallFollow();
     void computeTurnInPlace();
     void computeAvoidBoundary();
 

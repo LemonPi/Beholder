@@ -1,24 +1,28 @@
 #include "sonars.h"
 
-unsigned long Sonars::_nextRunMs = 0;
-unsigned int Sonars::_currentNumSonar = 0;
+// note _sonars have to be initialized in main with pins
+// NewPing Sonars::_sonars[NUM_SONAR];
+unsigned int Sonars::_mm[NUM_SONAR];
+unsigned long Sonars::_pingTimer[NUM_SONAR];
+int Sonars::_currentSonar = 0;
 
-bool Sonars::addSonar(int triggerPin, int echoPin, int maxDistance) {
-    // over limit
-    if (_currentNumSonar >= NUM_SONAR) {
-        return false;
+void Sonars::setupPingTimers() {
+    _pingTimer[0] = millis() + 100; // wait a bit before starting measurement
+    for (uint8_t i = 1; i < NUM_SONAR; i++) {
+        _pingTimer[i] = _pingTimer[i - 1] + MEASUREMENT_PERIOD_MS;
     }
-
-    _sonars[_currentNumSonar] = NewPing(triggerPin, echoPin, maxDistance);
-
-    ++_currentNumSonar;
-    return true;
 }
 
 void Sonars::run() {
-    if (millis() > _nextRunMs) {
-        _nextRunMs += MEASUREMENT_PERIOD_MS;
-        for (uint8_t i = 0; i < NUM_SONAR; i++) {
+    const auto currentMs = millis();
+    for (uint8_t i = 0; i < NUM_SONAR; i++) {
+        if (currentMs >= _pingTimer[i]) {
+            // Set next time this sensor will be pinged.
+            _pingTimer[i] += MEASUREMENT_PERIOD_MS * NUM_SONAR;
+            // Make sure previous timer is canceled before starting a new ping
+            // (insurance).
+            _sonars[_currentSonar].timer_stop();
+            _currentSonar = i;
             // start ping and attach callback
             _sonars[i].ping_timer(echoCheck);
         }
@@ -26,9 +30,12 @@ void Sonars::run() {
 }
 
 void Sonars::echoCheck() {
-    for (uint8_t i = 0; i < NUM_SONAR; ++i) {
-        if (_sonars[i].check_timer()) {
-            _mm[i] = _sonars[i].ping_result * 10 / US_ROUNDTRIP_CM;
-        }
+    if (_sonars[_currentSonar].check_timer()) {
+        _mm[_currentSonar] =
+            _sonars[_currentSonar].ping_result * 10 / US_ROUNDTRIP_CM;
     }
+}
+
+unsigned int Sonars::getReading(SonarIndex index) {
+    return _mm[index];
 }
