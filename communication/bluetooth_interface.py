@@ -26,7 +26,7 @@ host = bl_service["host"]
 print("connecting to \"%s\" on %s" % (name, host))
 
 # Create the client socket
-sock = bl.BluetoothSocket(bl.RFCOMM)
+sock = bl.BluetoothSocket(bl.RFCOMM))
 sock.connect((host, port))
 
 print("connected.  type stuff")
