@@ -4,11 +4,14 @@ CONFIG -= app_bundle
 CONFIG -= qt
 
 SOURCES += \
-    robot.cpp
+    robot.cpp \
+    behaviours/wall_follow.cpp \
+    sonars.cpp
 
 HEADERS += \
     onboard.ino \
     robot.h \
     types.h \
     behaviour_control.h \
-    target.h
+    target.h \
+    sonars.h
