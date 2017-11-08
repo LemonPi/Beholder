@@ -32,8 +32,7 @@ while true_until_window_closed():
     # This MUST happen after all the other drawing commands.
     pygame.display.flip()
 
-    update_clock.tick(30)
-    time.sleep(1)
+    update_clock.tick(4)
     print("Update took {} ms".format(update_clock.get_time()))
     while robot.get_expected_sensor_outputs().range < 0.05:
         robot.move(0, random.random()*np.pi*2)

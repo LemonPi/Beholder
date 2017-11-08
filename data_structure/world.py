@@ -4,7 +4,7 @@ import numpy as np
 import pygame
 
 from constants import Colours, Units
-from data_structure import get_distance
+from data_structure import get_distance, get_distance_rectilinear
 from display import Drawable
 
 

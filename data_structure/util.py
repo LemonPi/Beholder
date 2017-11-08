@@ -91,7 +91,7 @@ def get_distance_rectilinear(p, h, l2):
     p_l = np.expand_dims(w0, axis=2) - np.expand_dims(p, axis=1)    # (2xmxn)
     p_l_perp = np.sum(np.transpose(np.multiply(np.transpose(dir_perp), np.transpose(p_l))), axis=0, keepdims=False)  # (mxn)
 
-    r = np.array([np.sin(h), np.cos(h)])    # (2xn)
+    r = np.array([np.sin(np.pi/2 - h), np.cos(np.pi/2 - h)])    # (2xn)
     
     dist_mat = np.divide(p_l_perp, np.transpose(dir_wall) @ r)   # (mxn)
     
