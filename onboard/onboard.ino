@@ -1,9 +1,9 @@
 // uncomment for actual execution
 //#define NDEBUG
 
-#include "robot.h"
-#include "sonars.h"
-#include "debug.h"
+#include "src/robot.h"
+#include "src/sonars.h"
+#include "src/debug.h"
 
 // sonar sensors
 constexpr auto MAX_DIST_CM = 20;

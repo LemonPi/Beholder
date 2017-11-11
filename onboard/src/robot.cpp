@@ -4,17 +4,33 @@
 #include "robot.h"
 
 Robot::Robot(MotorShieldController mc)
-    : _on(false), _lastRunTime(0U), _mc(mc), _curTargetId(NO_TARGET) {
+    : _on(false), _lastRunTime(0U), _mc(mc),
+      _wallFollowController(&_wallDistanceCurrent, &_wallControllerOutput,
+                            &_wallDistanceSetpoint, WALL_KP, WALL_KD, WALL_KI,
+                            P_ON_M, DIRECT),
+      _curTargetId(NO_TARGET) {
+
     for (int b = 0; b < BehaviourId::NUM_BEHAVIOURS; ++b) {
         _allowedBehaviours[b] = true;
     }
+
+    // set sample time for PID controllers to be less than logic loop so that
+    // they can be called each cycle
+    _wallFollowController.SetSampleTime(LOGIC_PERIOD_MS - 1);
+
+    // controller output clamping if necessary
 }
 
 void Robot::turnOn() {
     _on = true;
+    // turn on controllers
+    _wallFollowController.SetMode(AUTOMATIC);
 }
+
 void Robot::turnOff() {
     _on = false;
+    // turn off controllers
+    _wallFollowController.SetMode(MANUAL);
 }
 
 void Robot::setBehaviour(BehaviourId behaviourId, bool enable) {
@@ -42,6 +58,7 @@ bool Robot::run() {
 
     // TODO loop through behaviour layers and see which ones want to take over
     // control
+    computeWallFollow();
 
     // arbitrate by selecting the layer with highest priority
     _activeBehaviourId = BehaviourId::NUM_BEHAVIOURS;

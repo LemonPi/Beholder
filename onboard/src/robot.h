@@ -2,6 +2,8 @@
 #define ROBOT_H
 
 #include <MotorShieldController.h>
+#include <PID_v1.h>
+
 #include "behaviour_control.h"
 #include "target.h"
 
@@ -30,6 +32,11 @@ class Robot {
 
     static constexpr auto MAX_NUM_TARGETS = 10;
     static constexpr auto NO_TARGET = -1;
+
+    // gains for wall follow controller, scaled for 1s
+    static constexpr auto WALL_KP = 2;
+    static constexpr auto WALL_KD = 0;
+    static constexpr auto WALL_KI = 1;
 
   public:
     // behaviour layers ordered in increasing priority
@@ -103,6 +110,12 @@ class Robot {
     BehaviourControl _behaviours[BehaviourId::NUM_BEHAVIOURS];
     bool _allowedBehaviours[BehaviourId::NUM_BEHAVIOURS];
     BehaviourId _activeBehaviourId;
+
+    // wall-following
+    double _wallDistanceCurrent;
+    double _wallControllerOutput;
+    double _wallDistanceSetpoint;
+    PID _wallFollowController;
 
     // target bookkeeping
     Target _targets[MAX_NUM_TARGETS];
