@@ -1,6 +1,7 @@
 #ifndef ROBOT_H
 #define ROBOT_H
 
+#include <MotorShieldController.h>
 #include "behaviour_control.h"
 #include "target.h"
 
@@ -40,7 +41,12 @@ class Robot {
         NUM_BEHAVIOURS
     };
 
-    Robot();
+    /**
+     * @brief Initialize robot object
+     * @param mc Arduino has no move semantics, but this function takes
+     * ownership of the motor controller.
+     */
+    Robot(MotorShieldController mc);
 
     void turnOn();
     void turnOff();
@@ -89,6 +95,9 @@ class Robot {
     // general bookkeeping
     bool _on;
     unsigned long _lastRunTime;
+
+    // motors
+    MotorShieldController _mc;
 
     // behaviour bookkeeping
     BehaviourControl _behaviours[BehaviourId::NUM_BEHAVIOURS];

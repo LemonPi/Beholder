@@ -33,6 +33,8 @@ void Sonars::echoCheck() {
     if (_sonars[_currentSonar].check_timer()) {
         _mm[_currentSonar] =
             _sonars[_currentSonar].ping_result * 10 / US_ROUNDTRIP_CM;
+    } else {
+        _mm[_currentSonar] = 0;
     }
 }
 

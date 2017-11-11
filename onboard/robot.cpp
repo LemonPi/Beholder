@@ -1,8 +1,10 @@
 #include <Arduino.h>
 
+#include "debug.h"
 #include "robot.h"
 
-Robot::Robot() : _on(false), _lastRunTime(0U), _curTargetId(NO_TARGET) {
+Robot::Robot(MotorShieldController mc)
+    : _on(false), _lastRunTime(0U), _mc(mc), _curTargetId(NO_TARGET) {
     for (int b = 0; b < BehaviourId::NUM_BEHAVIOURS; ++b) {
         _allowedBehaviours[b] = true;
     }
@@ -71,11 +73,17 @@ void Robot::controlMotors(const BehaviourControl& control) {
     const auto vL = control.speed + control.heading * BASE_LENGTH_M / 2;
     const auto vR = control.speed - control.heading * BASE_LENGTH_M / 2;
 
-    // TODO need to convert to angular velocities?
-    // v = wR so w = v/R
-    (void)vL;
-    (void)vR;
-    // TODO send to motors
+    // TODO close loop control velocity output when encoders are added
+    // currently it's an open loop PWM value
+    _mc.setLeftVelocity(vL);
+    _mc.setRightVelocity(vR);
+    _mc.go();
+
+    // debugging
+    PRINT("L: ");
+    PRINT(vL);
+    PRINT(" R: ");
+    PRINTLN(vR);
 }
 
 void Robot::processNextTarget() {

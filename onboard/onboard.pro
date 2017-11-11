@@ -14,4 +14,5 @@ HEADERS += \
     types.h \
     behaviour_control.h \
     target.h \
-    sonars.h
+    sonars.h \
+    debug.h
