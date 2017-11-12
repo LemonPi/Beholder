@@ -6,7 +6,7 @@
 #include "src/debug.h"
 
 // sonar sensors
-constexpr auto MAX_DIST_CM = 20;
+constexpr auto MAX_DIST_CM = 50;
 NewPing Sonars::_sonars[Sonars::NUM_SONAR] = {
     NewPing(53, 52, MAX_DIST_CM), // left
     NewPing(51, 50, MAX_DIST_CM), // front
@@ -27,7 +27,8 @@ MotorController leftMc(L_C, L_D, L_ENABLE);
 MotorController rightMc(R_C, R_D, R_ENABLE);
 
 // robot
-Robot robot(leftMc, rightMc);
+// motor controller fipped because we're driving in the opposite direction...
+Robot robot(rightMc, leftMc);
 
 void setup() {
     Serial.begin(9600);
@@ -43,6 +44,8 @@ void loop() {
     //    rightMc.setVelocity(-50);
     //    leftMc.go();
     //    rightMc.go();
+
+    robot.setBehaviour(Robot::BehaviourId::TURN_IN_FRONT_OF_WALL, false);
 
     robot.run();
 

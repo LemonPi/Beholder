@@ -6,6 +6,7 @@
 
 #include "behaviour_control.h"
 #include "target.h"
+#include "behaviours/wall_turn.h"
 
 /**
  * @brief The class representing a single mobile robot entity
@@ -33,6 +34,8 @@ class Robot {
     static constexpr auto MAX_NUM_TARGETS = 10;
     static constexpr auto NO_TARGET = -1;
 
+    // TODO some behaviours seem like they're independent of other state, so
+    // consider factoring those out into classes
     // ------------- WALL FOLLOWING
     // gains for wall follow controller, scaled for 1s
     static constexpr auto WALL_KP = 1;
@@ -46,6 +49,7 @@ class Robot {
     enum BehaviourId {
         NAVIGATE = 0,
         WALL_FOLLOW,
+        TURN_IN_FRONT_OF_WALL,
         TURN_IN_PLACE,
         AVOID_BOUNDARY,
         NUM_BEHAVIOURS
@@ -114,7 +118,10 @@ class Robot {
     bool _allowedBehaviours[BehaviourId::NUM_BEHAVIOURS];
     BehaviourId _activeBehaviourId;
 
-    // wall-following
+    // behaviour state
+    WallTurn _wallTurn;
+
+    // ------------- WALL FOLLOWING
     double _wallDistanceCurrent;
     double _wallControllerOutput;
     double _wallDistanceSetpoint;

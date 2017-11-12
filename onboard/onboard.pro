@@ -6,7 +6,8 @@ CONFIG -= qt
 SOURCES += \
     src/behaviours/wall_follow.cpp \
     src/robot.cpp \
-    src/sonars.cpp
+    src/sonars.cpp \
+    src/behaviours/wall_turn.cpp
 
 HEADERS += \
     onboard.ino \
@@ -15,4 +16,5 @@ HEADERS += \
     src/sonars.h \
     src/robot.h \
     src/debug.h \
-    src/behaviour_control.h
+    src/behaviour_control.h \
+    src/behaviours/wall_turn.h

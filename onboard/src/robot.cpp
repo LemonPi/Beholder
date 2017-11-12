@@ -60,6 +60,7 @@ bool Robot::run() {
     // TODO loop through behaviour layers and see which ones want to take over
     // control
     computeWallFollow();
+    _wallTurn.compute(_behaviours[BehaviourId::TURN_IN_FRONT_OF_WALL]);
 
     // arbitrate by selecting the layer with highest priority
     _activeBehaviourId = BehaviourId::NUM_BEHAVIOURS;
@@ -100,7 +101,8 @@ void Robot::controlMotors(const BehaviourControl& control) {
     _rightMc.go();
 
     // debugging
-    PRINT("L: ");
+    PRINT(_activeBehaviourId);
+    PRINT(" L: ");
     PRINT(_leftMc.getVelocity());
     PRINT(" R: ");
     PRINTLN(_rightMc.getVelocity());
