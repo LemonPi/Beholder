@@ -15,6 +15,7 @@ void Sonars::setupPingTimers() {
     }
     for (uint8_t i = 0; i < NUM_SONAR; i++) {
         _consecutiveRoundsTooFar[i] = 0;
+        _mm[i] = MAX_DIST_MM;
     }
 }
 

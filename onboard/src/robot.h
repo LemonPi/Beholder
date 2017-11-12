@@ -7,18 +7,12 @@
 #include "behaviour_control.h"
 #include "target.h"
 #include "behaviours/wall_turn.h"
+#include "behaviours/wall_follow.h"
 
 /**
  * @brief The class representing a single mobile robot entity
  */
 class Robot {
-    /**
-     * @brief Minimum time [ms] between the start of
-     * run calls. Note that this assumes the time to execute run is
-     * less than itself, as otherwise we get one cycle eating into
-     * the time of the next one.
-     */
-    static constexpr auto LOGIC_PERIOD_MS = 100;
     /**
      * @brief Effective radius of the left wheel [m]
      * TODO calibrate by driving straight?
@@ -34,19 +28,15 @@ class Robot {
     static constexpr auto MAX_NUM_TARGETS = 10;
     static constexpr auto NO_TARGET = -1;
 
-    // TODO some behaviours seem like they're independent of other state, so
-    // consider factoring those out into classes
-    // ------------- WALL FOLLOWING
-    // gains for wall follow controller, scaled for 1s
-    static constexpr auto WALL_KP = 1.0;
-    static constexpr auto WALL_KD = 0.1;
-    static constexpr auto WALL_KI = 0;
-    // used for both constant forward velocity and max turning difference
-    static constexpr auto WALL_FWD_PWM = 220;
-    // max turning difference when wall following
-    static constexpr auto WALL_FOLLOW_TURN_PWM = 100;
-
   public:
+    /**
+     * @brief Minimum time [ms] between the start of
+     * run calls. Note that this assumes the time to execute run is
+     * less than itself, as otherwise we get one cycle eating into
+     * the time of the next one.
+     */
+    static constexpr auto LOGIC_PERIOD_MS = 100;
+
     // only using 8bit resolution for motor PWM
     static constexpr auto MOTOR_PWM_MAX = 255;
     // behaviour layers ordered in increasing priority
@@ -95,7 +85,6 @@ class Robot {
     // each behaviour is not decoupled and requires information about other
     // layers so we can't abstract the computation into their classes
     void computeNavigate();
-    void computeWallFollow();
     void computeTurnInPlace();
     void computeAvoidBoundary();
 
@@ -125,12 +114,7 @@ class Robot {
 
     // behaviour state
     WallTurn _wallTurn;
-
-    // ------------- WALL FOLLOWING
-    double _wallDistanceCurrent;
-    double _wallControllerOutput;
-    double _wallDistanceSetpoint;
-    PID _wallFollowController;
+    WallFollow _wallFollow;
 
     // target bookkeeping
     Target _targets[MAX_NUM_TARGETS];

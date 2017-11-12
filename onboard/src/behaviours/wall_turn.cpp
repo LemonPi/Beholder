@@ -41,7 +41,8 @@ void WallTurn::compute(BehaviourControl& ctrl) {
 
     // this takes of when we're in a dead end and 90 degrees still results in a
     // wall in front
-    if (currentWallDist <= START_TURN_WHEN_IN_FRONT_MM) {
+    if (currentWallDist != 0 &&
+        currentWallDist <= START_TURN_WHEN_IN_FRONT_MM) {
         ctrl.active = true;
     }
 
