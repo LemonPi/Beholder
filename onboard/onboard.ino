@@ -14,14 +14,20 @@ NewPing Sonars::_sonars[Sonars::NUM_SONAR] = {
 };
 
 // motors
-constexpr auto DIR_LEFT = 13;
-constexpr auto ENABLE_LEFT = 11;
-constexpr auto DIR_RIGHT = 12;
-constexpr auto ENABLE_RIGHT = 10;
+constexpr auto L_C = 22;
+constexpr auto L_D = 26;
+
+constexpr auto R_C = 24;
+constexpr auto R_D = 28;
+
+constexpr auto L_ENABLE = 3;
+constexpr auto R_ENABLE = 2;
+
+MotorController leftMc(L_C, L_D, L_ENABLE);
+MotorController rightMc(R_C, R_D, R_ENABLE);
 
 // robot
-Robot robot(MotorShieldController(DIR_LEFT, DIR_RIGHT, ENABLE_LEFT,
-                                  ENABLE_RIGHT));
+Robot robot(leftMc, rightMc);
 
 void setup() {
     Serial.begin(9600);
@@ -31,6 +37,12 @@ void setup() {
 
 void loop() {
     Sonars::run();
+
+    // uncomment below to test motors running with other components
+    //    leftMc.setVelocity(50);
+    //    rightMc.setVelocity(-50);
+    //    leftMc.go();
+    //    rightMc.go();
 
     robot.run();
 

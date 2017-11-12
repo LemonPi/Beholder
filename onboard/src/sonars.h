@@ -8,7 +8,7 @@ class Sonars {
     /**
      * @brief How quickly the NewPing library and sonar sensors support sampling
      */
-    static constexpr auto MEASUREMENT_PERIOD_MS = 30;
+    static constexpr auto MEASUREMENT_PERIOD_MS = 33;
 
   public:
     enum SonarIndex { RIGHT, FRONT, LEFT, NUM_SONAR };

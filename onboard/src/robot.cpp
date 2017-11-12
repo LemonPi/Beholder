@@ -3,11 +3,11 @@
 #include "debug.h"
 #include "robot.h"
 
-Robot::Robot(MotorShieldController mc)
-    : _on(false), _lastRunTime(0U), _mc(mc),
+Robot::Robot(MotorController leftMc, MotorController rightMc)
+    : _on(false), _lastRunTime(0U), _leftMc(leftMc), _rightMc(rightMc),
       _wallFollowController(&_wallDistanceCurrent, &_wallControllerOutput,
-                            &_wallDistanceSetpoint, WALL_KP, WALL_KD, WALL_KI,
-                            P_ON_M, DIRECT),
+                            &_wallDistanceSetpoint, WALL_KP, WALL_KI, WALL_KD,
+                            P_ON_E, REVERSE),
       _curTargetId(NO_TARGET) {
 
     for (int b = 0; b < BehaviourId::NUM_BEHAVIOURS; ++b) {
@@ -19,6 +19,7 @@ Robot::Robot(MotorShieldController mc)
     _wallFollowController.SetSampleTime(LOGIC_PERIOD_MS - 1);
 
     // controller output clamping if necessary
+    _wallFollowController.SetOutputLimits(-WALL_FWD_PWM, WALL_FWD_PWM);
 }
 
 void Robot::turnOn() {
@@ -87,20 +88,22 @@ void Robot::controlMotors(const BehaviourControl& control) {
     // 2V + BL * H = 2 * VL
     // VL = V + BL/2 * H
     // VR = V - BL/2 * H
-    const auto vL = control.speed + control.heading * BASE_LENGTH_M / 2;
-    const auto vR = control.speed - control.heading * BASE_LENGTH_M / 2;
+    // but control units are in PWM because it's easier to reason with
+    const auto vL = control.speed + control.heading;
+    const auto vR = control.speed - control.heading;
 
     // TODO close loop control velocity output when encoders are added
     // currently it's an open loop PWM value
-    _mc.setLeftVelocity(vL);
-    _mc.setRightVelocity(vR);
-    _mc.go();
+    _leftMc.setVelocity(vL);
+    _rightMc.setVelocity(vR);
+    _leftMc.go();
+    _rightMc.go();
 
     // debugging
     PRINT("L: ");
-    PRINT(vL);
+    PRINT(_leftMc.getVelocity());
     PRINT(" R: ");
-    PRINTLN(vR);
+    PRINTLN(_rightMc.getVelocity());
 }
 
 void Robot::processNextTarget() {

@@ -4,10 +4,7 @@
 #include "../debug.h"
 #include "../sonars.h"
 
-// in PWM [0,255] values
-constexpr auto CONSTANT_FWD_VELOCITY = 30;
-
-constexpr auto DESIRED_WALL_DIST_MM = 60;
+constexpr auto DESIRED_WALL_DIST_MM = 70;
 
 /**
  * @brief Idea is to keep constant distance to wall with PID controller
@@ -34,7 +31,7 @@ void Robot::computeWallFollow() {
 
         // always go forward at constant velocity
         // TODO might be better to adjust speed based on sonar readings
-        ctrl.speed = CONSTANT_FWD_VELOCITY;
+        ctrl.speed = WALL_FWD_PWM;
         // heading becomes the output
         ctrl.heading = round(_wallControllerOutput);
     } else {

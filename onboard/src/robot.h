@@ -1,7 +1,7 @@
 #ifndef ROBOT_H
 #define ROBOT_H
 
-#include <MotorShieldController.h>
+#include <MotorController.h>
 #include <PID_v1.h>
 
 #include "behaviour_control.h"
@@ -33,10 +33,13 @@ class Robot {
     static constexpr auto MAX_NUM_TARGETS = 10;
     static constexpr auto NO_TARGET = -1;
 
+    // ------------- WALL FOLLOWING
     // gains for wall follow controller, scaled for 1s
-    static constexpr auto WALL_KP = 2;
+    static constexpr auto WALL_KP = 1;
     static constexpr auto WALL_KD = 0;
-    static constexpr auto WALL_KI = 1;
+    static constexpr auto WALL_KI = 0;
+    // used for both constant forward velocity and max turning difference
+    static constexpr auto WALL_FWD_PWM = 150;
 
   public:
     // behaviour layers ordered in increasing priority
@@ -53,7 +56,7 @@ class Robot {
      * @param mc Arduino has no move semantics, but this function takes
      * ownership of the motor controller.
      */
-    Robot(MotorShieldController mc);
+    Robot(MotorController leftMc, MotorController rightMc);
 
     void turnOn();
     void turnOff();
@@ -104,7 +107,7 @@ class Robot {
     unsigned long _lastRunTime;
 
     // motors
-    MotorShieldController _mc;
+    MotorController _leftMc, _rightMc;
 
     // behaviour bookkeeping
     BehaviourControl _behaviours[BehaviourId::NUM_BEHAVIOURS];
