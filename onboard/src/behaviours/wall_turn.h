@@ -4,6 +4,16 @@
 #include "../behaviour_control.h"
 
 class WallTurn {
+    enum State {
+        INACTIVE,
+        PRE_CORNER,
+        PRE_PERPENDICULAR,
+        JUST_PAST_PERPENDICULAR,
+        NUM_STATES
+    };
+
+    enum TurnType { IN_PLACE, PIVOT };
+
   public:
     WallTurn();
     void compute(BehaviourControl& ctrl);
@@ -11,6 +21,8 @@ class WallTurn {
   private:
     void reset();
 
+    State _state;
+    TurnType _type;
     int _minRightDist;
     int _maxRightDist;
 };

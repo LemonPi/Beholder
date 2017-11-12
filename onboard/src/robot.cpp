@@ -19,7 +19,16 @@ Robot::Robot(MotorController leftMc, MotorController rightMc)
     _wallFollowController.SetSampleTime(LOGIC_PERIOD_MS - 1);
 
     // controller output clamping if necessary
-    _wallFollowController.SetOutputLimits(-WALL_FWD_PWM, WALL_FWD_PWM);
+    //    static_assert(WALL_FWD_PWM + WALL_FOLLOW_TURN_PWM <= MOTOR_PWM_MAX,
+    //                  "Wall follow output needs to be within PWM ranges");
+    _wallFollowController.SetOutputLimits(-WALL_FOLLOW_TURN_PWM,
+                                          WALL_FOLLOW_TURN_PWM);
+
+    // always wait if nothing else is active (else motor takes last command)
+    auto& wait = _behaviours[BehaviourId::WAIT];
+    wait.active = true;
+    wait.speed = true;
+    wait.heading = true;
 }
 
 void Robot::turnOn() {
@@ -59,8 +68,12 @@ bool Robot::run() {
 
     // TODO loop through behaviour layers and see which ones want to take over
     // control
-    computeWallFollow();
-    _wallTurn.compute(_behaviours[BehaviourId::TURN_IN_FRONT_OF_WALL]);
+    if (_allowedBehaviours[BehaviourId::WALL_FOLLOW]) {
+        computeWallFollow();
+    }
+    if (_allowedBehaviours[BehaviourId::TURN_IN_FRONT_OF_WALL]) {
+        _wallTurn.compute(_behaviours[BehaviourId::TURN_IN_FRONT_OF_WALL]);
+    }
 
     // arbitrate by selecting the layer with highest priority
     _activeBehaviourId = BehaviourId::NUM_BEHAVIOURS;
@@ -97,8 +110,14 @@ void Robot::controlMotors(const BehaviourControl& control) {
     // currently it's an open loop PWM value
     _leftMc.setVelocity(vL);
     _rightMc.setVelocity(vR);
-    _leftMc.go();
-    _rightMc.go();
+
+    if (vL == 0 && vR == 0) {
+        _leftMc.floatStop();
+        _rightMc.floatStop();
+    } else {
+        _leftMc.go();
+        _rightMc.go();
+    }
 
     // debugging
     PRINT(_activeBehaviourId);

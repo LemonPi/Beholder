@@ -6,12 +6,24 @@
 #include "src/debug.h"
 
 // sonar sensors
-constexpr auto MAX_DIST_CM = 50;
 NewPing Sonars::_sonars[Sonars::NUM_SONAR] = {
-    NewPing(53, 52, MAX_DIST_CM), // left
-    NewPing(51, 50, MAX_DIST_CM), // front
-    NewPing(49, 48, MAX_DIST_CM)  // right
+    NewPing(53, 52, Sonars::MAX_DIST_MM / 10), // left
+    NewPing(51, 50, Sonars::MAX_DIST_MM / 10), // front
+    NewPing(49, 48, Sonars::MAX_DIST_MM / 10)  // right
 };
+
+char sensorIndexName(Sonars::SonarIndex index) {
+    switch (index) {
+    case Sonars::LEFT:
+        return 'L';
+    case Sonars::FRONT:
+        return 'F';
+    case Sonars::RIGHT:
+        return 'R';
+    default:
+        return '0';
+    }
+}
 
 // motors
 constexpr auto L_C = 22;
@@ -42,10 +54,11 @@ void loop() {
     // uncomment below to test motors running with other components
     //    leftMc.setVelocity(50);
     //    rightMc.setVelocity(-50);
-    //    leftMc.go();
-    //    rightMc.go();
+    //        leftMc.go();
+    //        rightMc.go();
 
-    robot.setBehaviour(Robot::BehaviourId::TURN_IN_FRONT_OF_WALL, false);
+    robot.setBehaviour(Robot::BehaviourId::WALL_FOLLOW, true);
+    robot.setBehaviour(Robot::BehaviourId::TURN_IN_FRONT_OF_WALL, true);
 
     robot.run();
 
@@ -54,9 +67,10 @@ void loop() {
     if (millis() > nextPrintTime) {
         nextPrintTime += 1000;
         for (auto i = 0; i < Sonars::NUM_SONAR; ++i) {
-            PRINT(i);
+            const auto index = static_cast<Sonars::SonarIndex>(i);
+            PRINT(sensorIndexName(index));
             PRINT("=");
-            PRINT(Sonars::getReading(static_cast<Sonars::SonarIndex>(i)));
+            PRINT(Sonars::getReading(index));
             PRINT("mm ");
         }
         PRINTLN();

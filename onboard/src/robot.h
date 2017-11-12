@@ -38,16 +38,21 @@ class Robot {
     // consider factoring those out into classes
     // ------------- WALL FOLLOWING
     // gains for wall follow controller, scaled for 1s
-    static constexpr auto WALL_KP = 1;
-    static constexpr auto WALL_KD = 0;
+    static constexpr auto WALL_KP = 1.0;
+    static constexpr auto WALL_KD = 0.1;
     static constexpr auto WALL_KI = 0;
     // used for both constant forward velocity and max turning difference
-    static constexpr auto WALL_FWD_PWM = 150;
+    static constexpr auto WALL_FWD_PWM = 220;
+    // max turning difference when wall following
+    static constexpr auto WALL_FOLLOW_TURN_PWM = 100;
 
   public:
+    // only using 8bit resolution for motor PWM
+    static constexpr auto MOTOR_PWM_MAX = 255;
     // behaviour layers ordered in increasing priority
     enum BehaviourId {
-        NAVIGATE = 0,
+        WAIT = 0,
+        NAVIGATE,
         WALL_FOLLOW,
         TURN_IN_FRONT_OF_WALL,
         TURN_IN_PLACE,
