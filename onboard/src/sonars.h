@@ -11,7 +11,7 @@ class Sonars {
     static constexpr auto MEASUREMENT_PERIOD_MS = 33;
 
   public:
-    enum SonarIndex { RIGHT, FRONT, LEFT, NUM_SONAR };
+    enum SonarIndex { LEFT, FRONT, RIGHT, NUM_SONAR };
 
     /**
      * @brief Call in setup to stagger the times we try to ping with sonar to

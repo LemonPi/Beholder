@@ -8,9 +8,9 @@
 // sonar sensors
 constexpr auto MAX_DIST_CM = 20;
 NewPing Sonars::_sonars[Sonars::NUM_SONAR] = {
-    NewPing(53, 52, MAX_DIST_CM), // right
+    NewPing(53, 52, MAX_DIST_CM), // left
     NewPing(51, 50, MAX_DIST_CM), // front
-    NewPing(49, 48, MAX_DIST_CM)  // left
+    NewPing(49, 48, MAX_DIST_CM)  // right
 };
 
 // motors
