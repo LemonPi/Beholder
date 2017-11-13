@@ -35,6 +35,8 @@ class WallTurn {
     TurnType _type;
     int _minRightDist;
     int _maxRightDist;
+
+    bool _turningInPlace;
 };
 
 #endif // WALL_TURN_H

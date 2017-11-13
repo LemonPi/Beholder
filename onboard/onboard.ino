@@ -1,5 +1,5 @@
 // uncomment for actual execution
-#define NDEBUG
+//#define NDEBUG
 
 #include "src/robot.h"
 #include "src/sonars.h"

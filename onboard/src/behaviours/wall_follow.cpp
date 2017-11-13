@@ -1,5 +1,6 @@
 #include <Arduino.h>
 
+#include "common.h"
 #include "wall_follow.h"
 #include "../robot.h"
 #include "../debug.h"
@@ -14,7 +15,7 @@ static constexpr auto TURN_PWM = 150 * Robot::SPEED_SCALE;
 constexpr auto DESIRED_WALL_DIST_MM = 55;
 constexpr auto MAX_FOLLOW_DIST_MM = 300;
 // ms / (ms/cycle) = [cycle]
-constexpr auto NUM_ROUNDS_PRE_TURN_DRIVE = 500 / Robot::LOGIC_PERIOD_MS;
+constexpr auto NUM_ROUNDS_PRE_TURN_DRIVE = 100 / Robot::LOGIC_PERIOD_MS;
 constexpr auto NUM_ROUNDS_TOO_FAR_WAIT = 3;
 constexpr auto TURN_STOPPING_TOLERANCE = 10;
 
@@ -44,6 +45,11 @@ void WallFollow::followOff() {
     _wallFollowController.SetMode(MANUAL);
 }
 
+void WallFollow::reset() {
+    _state = State::FOLLOWING;
+    _wallDistanceMin = 1 << 10;
+    followOn();
+}
 /**
  * @brief Idea is to keep constant distance to wall with PID controller
  * and measure the distance with a sonar. The output of the controller
@@ -111,23 +117,43 @@ void WallFollow::compute(BehaviourControl& ctrl) {
                 ctrl.heading = 0;
             }
             break;
-        case State::TURNING:
-            // pivot clockwise until we're ready to wall follow again
-            // assumes we can can keep turning until we hit a wall on the right
+        case State::TURNING: {
+            bool finishedTurning = false;
+            // pivot clockwise until we've passed perpendicular to wall (min
+            // distance)
+            if (_wallDistanceCurrent < _wallDistanceMin) {
+                _wallDistanceMin = _wallDistanceCurrent;
+            } else {
+                // passed min distance
+                if (_wallDistanceCurrent > _wallDistanceMin + TURN_DEBOUNCE) {
+                    finishedTurning = true;
+                }
+            }
+
+            // or if we're close enough to start following again
             if (_wallDistanceCurrent <
                 DESIRED_WALL_DIST_MM + TURN_STOPPING_TOLERANCE) {
-                _state = State::FOLLOWING;
-                followOn();
+                finishedTurning = true;
+            }
+            // assumes we can can keep turning until we hit a wall on the right
+            if (finishedTurning) {
+                reset();
                 recomputeState = true;
             } else {
                 // pivot turn clockwise
                 pivotTurn(ctrl, TURN_PWM, PivotMotor::RIGHT);
+                ctrl.speed += 50;
             }
             break;
+        }
         default:
             break;
         }
     } while (recomputeState);
 
-    PRINTLN(_state);
+    PRINT(_state);
+    PRINT(" ");
+    PRINT(_wallDistanceMin);
+    PRINT(" ");
+    PRINTLN(_wallDistanceCurrent);
 }

@@ -4,6 +4,7 @@
 #include "../debug.h"
 #include "../sonars.h"
 #include "wall_turn.h"
+#include "common.h"
 
 /**
  * @brief How far away from the wall we should start turning
@@ -19,11 +20,10 @@ static constexpr auto TURN_PWM = 150 * Robot::SPEED_SCALE;
  * for corner and perpendicular
  */
 constexpr auto TURN_MIN_DIFF = 50;
-constexpr auto TURN_DEBOUNCE = 10;
 
 constexpr auto CLEARANCE_FOR_PIVOT_MM = 150;
 
-WallTurn::WallTurn() {
+WallTurn::WallTurn() : _turningInPlace(false) {
     reset();
 }
 
@@ -66,13 +66,18 @@ void WallTurn::compute(BehaviourControl& ctrl) {
             recomputeState = false;
             switch (_state) {
             case State::INACTIVE:
+                // HACK: keep turning in place instead of pivoting if we've been
+                // doing it to complete it for a dead end
+                if (_turningInPlace ||
+                    Sonars::getReading(Sonars::LEFT) < CLEARANCE_FOR_PIVOT_MM) {
+                    _type = TurnType::IN_PLACE;
+                    _turningInPlace = true;
+                }
                 // decide what type of turn to make
                 // pivot performs better according to this algorithm, but we
                 // can't pivot out of a dead end
-                if (Sonars::getReading(Sonars::LEFT) > CLEARANCE_FOR_PIVOT_MM) {
+                else {
                     _type = TurnType::PIVOT;
-                } else {
-                    _type = TurnType::IN_PLACE;
                 }
 
                 _state = State::PRE_CORNER;
@@ -115,6 +120,7 @@ void WallTurn::compute(BehaviourControl& ctrl) {
                 // if we're now clear of a wall in front, we're done
                 if (currentWallDist > START_TURN_WHEN_IN_FRONT_MM) {
                     ctrl.active = false;
+                    _turningInPlace = false;
                 }
                 break;
             default:

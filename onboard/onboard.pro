@@ -18,4 +18,5 @@ HEADERS += \
     src/debug.h \
     src/behaviour_control.h \
     src/behaviours/wall_turn.h \
-    src/behaviours/wall_follow.h
+    src/behaviours/wall_follow.h \
+    src/behaviours/common.h

@@ -28,6 +28,8 @@ class WallFollow {
     double _wallDistanceCurrent;
     double _wallControllerOutput;
     double _wallDistanceSetpoint;
+    double _wallDistanceMin;
+
     PID _wallFollowController;
 
     int _tooFarToFollowRounds;
