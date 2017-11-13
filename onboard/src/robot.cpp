@@ -60,6 +60,7 @@ bool Robot::run() {
         _wallTurn.compute(_behaviours[BehaviourId::TURN_IN_FRONT_OF_WALL]);
     }
 
+    const auto lastActive = _activeBehaviourId;
     // arbitrate by selecting the layer with highest priority
     _activeBehaviourId = BehaviourId::NUM_BEHAVIOURS;
     for (int b = 0; b < BehaviourId::NUM_BEHAVIOURS; ++b) {
@@ -70,6 +71,12 @@ bool Robot::run() {
     // nothing active so just wait?
     if (_activeBehaviourId == BehaviourId::NUM_BEHAVIOURS) {
         return false;
+    }
+
+    // reset controllers if we're re-entering
+    if (_activeBehaviourId == BehaviourId::WALL_FOLLOW &&
+        lastActive != _activeBehaviourId) {
+        _wallFollow.reset();
     }
 
     // actuate motors

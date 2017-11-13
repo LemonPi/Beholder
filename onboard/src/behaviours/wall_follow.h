@@ -9,8 +9,8 @@ class WallFollow {
     enum State { INACTIVE, FOLLOWING, PRE_TURN, TURNING, NUM_STATES };
 
     // gains for wall follow controller, scaled for 1s
-    static constexpr auto WALL_KP = 1.0;
-    static constexpr auto WALL_KD = 0.1;
+    static constexpr auto WALL_KP = 1.5;
+    static constexpr auto WALL_KD = 0.2;
     static constexpr auto WALL_KI = 0;
 
   public:
@@ -21,9 +21,9 @@ class WallFollow {
 
     void compute(BehaviourControl& ctrl);
 
-  private:
     void reset();
 
+  private:
     State _state;
     double _wallDistanceCurrent;
     double _wallControllerOutput;

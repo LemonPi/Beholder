@@ -12,10 +12,10 @@ static constexpr auto WALL_FWD_PWM = 220 * Robot::SPEED_SCALE;
 static constexpr auto WALL_FOLLOW_TURN_PWM = 100 * Robot::SPEED_SCALE;
 static constexpr auto TURN_PWM = 150 * Robot::SPEED_SCALE;
 
-constexpr auto DESIRED_WALL_DIST_MM = 55;
-constexpr auto MAX_FOLLOW_DIST_MM = 300;
+constexpr auto DESIRED_WALL_DIST_MM = 65;
+constexpr auto MAX_FOLLOW_DIST_MM = 400;
 // ms / (ms/cycle) = [cycle]
-constexpr auto NUM_ROUNDS_PRE_TURN_DRIVE = 100 / Robot::LOGIC_PERIOD_MS;
+constexpr auto NUM_ROUNDS_PRE_TURN_DRIVE = 200 / Robot::LOGIC_PERIOD_MS;
 constexpr auto NUM_ROUNDS_TOO_FAR_WAIT = 3;
 constexpr auto TURN_STOPPING_TOLERANCE = 10;
 
@@ -48,6 +48,7 @@ void WallFollow::followOff() {
 void WallFollow::reset() {
     _state = State::FOLLOWING;
     _wallDistanceMin = 1 << 10;
+    followOff();
     followOn();
 }
 /**
@@ -98,10 +99,17 @@ void WallFollow::compute(BehaviourControl& ctrl) {
                     ERROR(1);
                 }
 
-                // heading becomes the output
-                ctrl.heading = round(_wallControllerOutput);
-                // go forward depending on how fast we want to turn
-                // when we want to turn a lot, go forward slowly
+                //                // heading becomes the output
+                //                ctrl.heading = round(_wallControllerOutput);
+                //                // go forward depending on how fast we want to
+                //                turn
+                //                // when we want to turn a lot, go forward
+                //                slowly
+                //                ctrl.speed = WALL_FWD_PWM - abs(ctrl.heading);
+
+                // own proportional controller
+                ctrl.heading =
+                    (_wallDistanceCurrent - _wallDistanceSetpoint) * WALL_KP;
                 ctrl.speed = WALL_FWD_PWM - abs(ctrl.heading);
             }
             break;
@@ -142,7 +150,6 @@ void WallFollow::compute(BehaviourControl& ctrl) {
             } else {
                 // pivot turn clockwise
                 pivotTurn(ctrl, TURN_PWM, PivotMotor::RIGHT);
-                ctrl.speed += 50;
             }
             break;
         }
