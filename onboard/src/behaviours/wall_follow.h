@@ -6,22 +6,18 @@
 #include "../behaviour_control.h"
 
 class WallFollow {
-    enum State { INACTIVE, FOLLOWING, NUM_STATES };
+    enum State { INACTIVE, FOLLOWING, PRE_TURN, TURNING, NUM_STATES };
 
     // gains for wall follow controller, scaled for 1s
     static constexpr auto WALL_KP = 1.0;
     static constexpr auto WALL_KD = 0.1;
     static constexpr auto WALL_KI = 0;
-    // used for constant forward velocity
-    static constexpr auto WALL_FWD_PWM = 220;
-    // max turning difference
-    static constexpr auto WALL_FOLLOW_TURN_PWM = 100;
 
   public:
     WallFollow();
 
-    void turnOn();
-    void turnOff();
+    void followOn();
+    void followOff();
 
     void compute(BehaviourControl& ctrl);
 
@@ -33,6 +29,9 @@ class WallFollow {
     double _wallControllerOutput;
     double _wallDistanceSetpoint;
     PID _wallFollowController;
+
+    int _tooFarToFollowRounds;
+    int _preTurnForwardRounds;
 };
 
 #endif // WALL_FOLLOW_H

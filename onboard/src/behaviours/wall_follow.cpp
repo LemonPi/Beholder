@@ -5,10 +5,22 @@
 #include "../debug.h"
 #include "../sonars.h"
 
+// used for constant forward velocity
+static constexpr auto WALL_FWD_PWM = 220 * Robot::SPEED_SCALE;
+// max turning difference
+static constexpr auto WALL_FOLLOW_TURN_PWM = 100 * Robot::SPEED_SCALE;
+static constexpr auto TURN_PWM = 150 * Robot::SPEED_SCALE;
+
 constexpr auto DESIRED_WALL_DIST_MM = 55;
+constexpr auto MAX_FOLLOW_DIST_MM = 300;
+// ms / (ms/cycle) = [cycle]
+constexpr auto NUM_ROUNDS_PRE_TURN_DRIVE = 500 / Robot::LOGIC_PERIOD_MS;
+constexpr auto NUM_ROUNDS_TOO_FAR_WAIT = 3;
+constexpr auto TURN_STOPPING_TOLERANCE = 10;
 
 WallFollow::WallFollow()
-    : _wallFollowController(&_wallDistanceCurrent, &_wallControllerOutput,
+    : _state(State::FOLLOWING),
+      _wallFollowController(&_wallDistanceCurrent, &_wallControllerOutput,
                             &_wallDistanceSetpoint, WALL_KP, WALL_KI, WALL_KD,
                             P_ON_E, REVERSE) {
     // set sample time for PID controllers to be less than logic loop so that
@@ -22,12 +34,12 @@ WallFollow::WallFollow()
                                           WALL_FOLLOW_TURN_PWM);
 }
 
-void WallFollow::turnOn() {
+void WallFollow::followOn() {
     // turn on controllers
     _wallFollowController.SetMode(AUTOMATIC);
 }
 
-void WallFollow::turnOff() {
+void WallFollow::followOff() {
     // turn off controllers
     _wallFollowController.SetMode(MANUAL);
 }
@@ -45,25 +57,77 @@ void WallFollow::compute(BehaviourControl& ctrl) {
     _wallDistanceSetpoint = DESIRED_WALL_DIST_MM;
     _wallDistanceCurrent = Sonars::getReading(Sonars::RIGHT);
 
-    // if we get a reading of 0, means there's no wall there
-    if (Sonars::isTooFar(Sonars::RIGHT) == false) {
-        // PID's period should always be less than logic, so we should always
-        // compute something
-        if (_wallFollowController.Compute() == false) {
-            ERROR(1);
-        }
-
-        // heading becomes the output
-        ctrl.heading = round(_wallControllerOutput);
-        // go forward depending on how fast we want to turn
-        // when we want to turn a lot, go forward slowly
-        ctrl.speed = WALL_FWD_PWM - abs(ctrl.heading);
-    } else {
-
-        // don't do anything if we don't have a wall
+    // erroneous reading / initializing
+    if (_wallDistanceCurrent == 0) {
         ctrl.speed = 0;
         ctrl.heading = 0;
+        ctrl.active = false;
+        return;
     }
 
-    // TODO
+    bool recomputeState = false;
+
+    do {
+        recomputeState = false;
+
+        switch (_state) {
+        case State::FOLLOWING:
+            // stop following when too far; start trying to turn
+            if (_wallDistanceCurrent > MAX_FOLLOW_DIST_MM) {
+                if (++_tooFarToFollowRounds > NUM_ROUNDS_TOO_FAR_WAIT) {
+                    _state = State::PRE_TURN;
+                    followOff();
+                    recomputeState = true;
+                } else {
+                    // wait to see if this is erroneous or not
+                    ctrl.speed = 0;
+                    ctrl.heading = 0;
+                }
+            } else {
+                _tooFarToFollowRounds = 0;
+                // PID's period should always be less than logic, so we should
+                // always
+                // compute something
+                if (_wallFollowController.Compute() == false) {
+                    ERROR(1);
+                }
+
+                // heading becomes the output
+                ctrl.heading = round(_wallControllerOutput);
+                // go forward depending on how fast we want to turn
+                // when we want to turn a lot, go forward slowly
+                ctrl.speed = WALL_FWD_PWM - abs(ctrl.heading);
+            }
+            break;
+        // drive forward a bit to clear the rest of the robot for a pivot turn
+        case State::PRE_TURN:
+            if (++_preTurnForwardRounds > NUM_ROUNDS_PRE_TURN_DRIVE) {
+                _state = State::TURNING;
+                recomputeState = true;
+                _preTurnForwardRounds = 0;
+            } else {
+                // head straight
+                ctrl.speed = WALL_FWD_PWM;
+                ctrl.heading = 0;
+            }
+            break;
+        case State::TURNING:
+            // pivot clockwise until we're ready to wall follow again
+            // assumes we can can keep turning until we hit a wall on the right
+            if (_wallDistanceCurrent <
+                DESIRED_WALL_DIST_MM + TURN_STOPPING_TOLERANCE) {
+                _state = State::FOLLOWING;
+                followOn();
+                recomputeState = true;
+            } else {
+                // pivot turn clockwise
+                pivotTurn(ctrl, TURN_PWM, PivotMotor::RIGHT);
+            }
+            break;
+        default:
+            break;
+        }
+    } while (recomputeState);
+
+    PRINTLN(_state);
 }

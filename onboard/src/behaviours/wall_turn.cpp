@@ -9,6 +9,10 @@
  * @brief How far away from the wall we should start turning
  */
 constexpr auto START_TURN_WHEN_IN_FRONT_MM = 130;
+/**
+ * @brief The PWM to drive heading at when turning
+ */
+static constexpr auto TURN_PWM = 150 * Robot::SPEED_SCALE;
 
 /**
  * @brief How much we expect the difference between min and max reading
@@ -18,11 +22,6 @@ constexpr auto TURN_MIN_DIFF = 50;
 constexpr auto TURN_DEBOUNCE = 10;
 
 constexpr auto CLEARANCE_FOR_PIVOT_MM = 150;
-
-/**
- * @brief The PWM to drive heading at when turning
- */
-constexpr auto TURN_PWM = 150;
 
 WallTurn::WallTurn() {
     reset();
@@ -133,13 +132,25 @@ void WallTurn::compute(BehaviourControl& ctrl) {
     }
 
     // either do a pivot turn or turn in place (comment out one of them)
-    // turn in place
+    // counterclockwise turn
     if (_type == TurnType::IN_PLACE) {
-        ctrl.speed = 0;
-        ctrl.heading = -TURN_PWM;
+        inPlaceTurn(ctrl, -TURN_PWM);
     } else if (_type == TurnType::PIVOT) {
-        // pivot turn
-        ctrl.speed = TURN_PWM / 2;
-        ctrl.heading = -TURN_PWM / 2;
+        pivotTurn(ctrl, -TURN_PWM, PivotMotor::LEFT);
+    }
+}
+
+void inPlaceTurn(BehaviourControl& ctrl, int velocity) {
+    ctrl.speed = 0;
+    ctrl.heading = velocity;
+}
+void pivotTurn(BehaviourControl& ctrl, int velocity, PivotMotor pivot) {
+    // pivot is the motor we want to go at 0
+    if (pivot == PivotMotor::LEFT) {
+        ctrl.speed = -velocity / 2;
+        ctrl.heading = velocity / 2;
+    } else {
+        ctrl.speed = velocity / 2;
+        ctrl.heading = velocity / 2;
     }
 }

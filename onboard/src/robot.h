@@ -39,6 +39,9 @@ class Robot {
 
     // only using 8bit resolution for motor PWM
     static constexpr auto MOTOR_PWM_MAX = 255;
+
+    // global speed scale
+    static constexpr auto SPEED_SCALE = 1;
     // behaviour layers ordered in increasing priority
     enum BehaviourId {
         WAIT = 0,

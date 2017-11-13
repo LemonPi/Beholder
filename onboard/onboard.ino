@@ -1,5 +1,5 @@
 // uncomment for actual execution
-//#define NDEBUG
+#define NDEBUG
 
 #include "src/robot.h"
 #include "src/sonars.h"
@@ -29,8 +29,8 @@ char sensorIndexName(Sonars::SonarIndex index) {
 constexpr auto L_C = 22;
 constexpr auto L_D = 26;
 
-constexpr auto R_C = 24;
-constexpr auto R_D = 28;
+constexpr auto R_C = 28;
+constexpr auto R_D = 24;
 
 constexpr auto L_ENABLE = 3;
 constexpr auto R_ENABLE = 2;
@@ -54,8 +54,8 @@ void loop() {
     // uncomment below to test motors running with other components
     //    leftMc.setVelocity(50);
     //    rightMc.setVelocity(-50);
-    //        leftMc.go();
-    //        rightMc.go();
+    //    leftMc.go();
+    //    rightMc.go();
 
     robot.setBehaviour(Robot::BehaviourId::WALL_FOLLOW, true);
     robot.setBehaviour(Robot::BehaviourId::TURN_IN_FRONT_OF_WALL, true);

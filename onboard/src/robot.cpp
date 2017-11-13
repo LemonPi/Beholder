@@ -20,12 +20,12 @@ Robot::Robot(MotorController leftMc, MotorController rightMc)
 
 void Robot::turnOn() {
     _on = true;
-    _wallFollow.turnOn();
+    _wallFollow.followOn();
 }
 
 void Robot::turnOff() {
     _on = false;
-    _wallFollow.turnOff();
+    _wallFollow.followOff();
 }
 
 void Robot::setBehaviour(BehaviourId behaviourId, bool enable) {

@@ -3,6 +3,16 @@
 
 #include "../behaviour_control.h"
 
+/**
+ * @brief inPlaceTurn Turn in place (no translation, pure rotation)
+ * @param ctrl
+ * @param velocity Negative values turn counterclockwise
+ */
+void inPlaceTurn(BehaviourControl& ctrl, int velocity);
+
+enum class PivotMotor { LEFT, RIGHT };
+void pivotTurn(BehaviourControl& ctrl, int velocity, PivotMotor pivot);
+
 class WallTurn {
     enum State {
         INACTIVE,
