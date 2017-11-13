@@ -13,7 +13,8 @@ static constexpr auto WALL_FOLLOW_TURN_PWM = 100 * Robot::SPEED_SCALE;
 static constexpr auto TURN_PWM = 150 * Robot::SPEED_SCALE;
 
 constexpr auto DESIRED_WALL_DIST_MM = 65;
-constexpr auto MAX_FOLLOW_DIST_MM = 400;
+constexpr auto MAX_FOLLOW_DIST_MM = 250;
+
 // ms / (ms/cycle) = [cycle]
 constexpr auto NUM_ROUNDS_PRE_TURN_DRIVE = 200 / Robot::LOGIC_PERIOD_MS;
 constexpr auto NUM_ROUNDS_TOO_FAR_WAIT = 3;
@@ -80,7 +81,12 @@ void WallFollow::compute(BehaviourControl& ctrl) {
         switch (_state) {
         case State::FOLLOWING:
             // stop following when too far; start trying to turn
-            if (_wallDistanceCurrent > MAX_FOLLOW_DIST_MM) {
+            // only enter our turning mode if there's no competing interior
+            // corner
+            // if so, use the interior corner turn behaviour instead
+            if (Sonars::getReading(Sonars::FRONT) >
+                    WallTurn::START_TURN_WHEN_IN_FRONT_MM * 1.2 &&
+                _wallDistanceCurrent > MAX_FOLLOW_DIST_MM) {
                 if (++_tooFarToFollowRounds > NUM_ROUNDS_TOO_FAR_WAIT) {
                     _state = State::PRE_TURN;
                     followOff();

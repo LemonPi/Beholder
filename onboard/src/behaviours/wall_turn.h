@@ -2,6 +2,7 @@
 #define WALL_TURN_H
 
 #include "../behaviour_control.h"
+#include "../sonars.h"
 
 /**
  * @brief inPlaceTurn Turn in place (no translation, pure rotation)
@@ -25,6 +26,11 @@ class WallTurn {
     enum TurnType { IN_PLACE, PIVOT };
 
   public:
+    /**
+     * @brief How far away from the wall we should start turning
+     */
+    static constexpr auto START_TURN_WHEN_IN_FRONT_MM = 130;
+
     WallTurn();
     void compute(BehaviourControl& ctrl);
 
@@ -33,8 +39,11 @@ class WallTurn {
 
     State _state;
     TurnType _type;
-    int _minRightDist;
-    int _maxRightDist;
+
+    // which sonar to use to guide our turning
+    Sonars::SonarIndex _turnSide;
+    int _minSideDist;
+    int _maxSideDist;
 
     bool _turningInPlace;
 };
