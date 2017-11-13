@@ -19,6 +19,9 @@ constexpr auto TURN_MIN_DIFF = 50;
 
 constexpr auto CLEARANCE_FOR_PIVOT_MM = 150;
 
+// HACK: avoid doing nothing
+constexpr auto ROUNDS_ALLOWED_NO_READINGS = 2;
+
 WallTurn::WallTurn() : _turningInPlace(false) {
     reset();
 }
@@ -28,6 +31,7 @@ void WallTurn::reset() {
     _maxSideDist = -1;
     // assuming this distance will never be read (safe assumption)
     _minSideDist = 1 << 10;
+    _turnsWithNoSideReadings = 0;
 }
 void WallTurn::compute(BehaviourControl& ctrl) {
 
@@ -48,10 +52,17 @@ void WallTurn::compute(BehaviourControl& ctrl) {
             static_cast<int>(Sonars::getReading(Sonars::LEFT));
 
         // bad readings, skip this turn
+        // HACK: avoid doing nothing, remove when we add targets
         if ((rightWallDist == 0 || Sonars::isTooFar(Sonars::RIGHT)) &&
             (leftWallDist == 0 || Sonars::isTooFar(Sonars::LEFT))) {
+
             ctrl.speed = 0;
             ctrl.heading = 0;
+
+            // HACK: avoid doing nothing when stuck
+            if (++_turnsWithNoSideReadings > ROUNDS_ALLOWED_NO_READINGS) {
+                ctrl.speed = 50 * Robot::SPEED_SCALE;
+            }
             return;
         }
 

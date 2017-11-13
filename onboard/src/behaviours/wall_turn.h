@@ -45,6 +45,9 @@ class WallTurn {
     int _minSideDist;
     int _maxSideDist;
 
+    // HACK: avoid getting stuck
+    int _turnsWithNoSideReadings;
+
     bool _turningInPlace;
 };
 

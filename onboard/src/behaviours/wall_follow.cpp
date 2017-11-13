@@ -127,7 +127,7 @@ void WallFollow::compute(BehaviourControl& ctrl) {
                 _preTurnForwardRounds = 0;
             } else {
                 // head straight
-                ctrl.speed = WALL_FWD_PWM;
+                ctrl.speed = WALL_FWD_PWM * 1.05;
                 ctrl.heading = 0;
             }
             break;
