@@ -7,7 +7,8 @@ SOURCES += \
     src/behaviours/wall_follow.cpp \
     src/robot.cpp \
     src/sonars.cpp \
-    src/behaviours/wall_turn.cpp
+    src/behaviours/wall_turn.cpp \
+    src/pose.cpp
 
 HEADERS += \
     onboard.ino \

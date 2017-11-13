@@ -8,4 +8,11 @@ struct Pose {
     heading_t heading;
 };
 
+/**
+ * @brief Shortest path distance [mm] between two poses ignoring heading
+ * @param a
+ * @param b
+ */
+coord_t distance(const Pose& a, const Pose& b);
+
 #endif // POSE_H

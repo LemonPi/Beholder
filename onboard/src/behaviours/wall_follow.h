@@ -3,6 +3,7 @@
 
 #include <PID_v1.h>
 
+#include "../pose.h"
 #include "../behaviour_control.h"
 
 class WallFollow {
@@ -19,7 +20,7 @@ class WallFollow {
     void followOn();
     void followOff();
 
-    void compute(BehaviourControl& ctrl);
+    void compute(BehaviourControl& ctrl, const Pose& robotPose);
 
     void reset();
 
@@ -33,7 +34,7 @@ class WallFollow {
     PID _wallFollowController;
 
     int _tooFarToFollowRounds;
-    int _preTurnForwardRounds;
+    Pose _preTurnStartPose;
 };
 
 #endif // WALL_FOLLOW_H

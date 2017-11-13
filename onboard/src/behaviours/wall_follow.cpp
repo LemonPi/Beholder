@@ -15,8 +15,7 @@ static constexpr auto TURN_PWM = 150 * Robot::SPEED_SCALE;
 constexpr auto DESIRED_WALL_DIST_MM = 65;
 constexpr auto MAX_FOLLOW_DIST_MM = 250;
 
-// ms / (ms/cycle) = [cycle]
-constexpr auto NUM_ROUNDS_PRE_TURN_DRIVE = 200 / Robot::LOGIC_PERIOD_MS;
+constexpr auto PRE_TURN_FWD_DRIVE_MM = 40;
 constexpr auto NUM_ROUNDS_TOO_FAR_WAIT = 3;
 constexpr auto TURN_STOPPING_TOLERANCE = 10;
 
@@ -57,7 +56,7 @@ void WallFollow::reset() {
  * and measure the distance with a sonar. The output of the controller
  * is desired heading
  */
-void WallFollow::compute(BehaviourControl& ctrl) {
+void WallFollow::compute(BehaviourControl& ctrl, const Pose& robotPose) {
     // always activate for now
     ctrl.active = true;
 
@@ -88,6 +87,7 @@ void WallFollow::compute(BehaviourControl& ctrl) {
                     WallTurn::START_TURN_WHEN_IN_FRONT_MM * 1.2 &&
                 _wallDistanceCurrent > MAX_FOLLOW_DIST_MM) {
                 if (++_tooFarToFollowRounds > NUM_ROUNDS_TOO_FAR_WAIT) {
+                    _preTurnStartPose = robotPose;
                     _state = State::PRE_TURN;
                     followOff();
                     recomputeState = true;
@@ -99,8 +99,7 @@ void WallFollow::compute(BehaviourControl& ctrl) {
             } else {
                 _tooFarToFollowRounds = 0;
                 // PID's period should always be less than logic, so we should
-                // always
-                // compute something
+                // always compute something
                 if (_wallFollowController.Compute() == false) {
                     ERROR(1);
                 }
@@ -120,17 +119,18 @@ void WallFollow::compute(BehaviourControl& ctrl) {
             }
             break;
         // drive forward a bit to clear the rest of the robot for a pivot turn
-        case State::PRE_TURN:
-            if (++_preTurnForwardRounds > NUM_ROUNDS_PRE_TURN_DRIVE) {
+        case State::PRE_TURN: {
+            if (distance(_preTurnStartPose, robotPose) >=
+                PRE_TURN_FWD_DRIVE_MM) {
                 _state = State::TURNING;
                 recomputeState = true;
-                _preTurnForwardRounds = 0;
             } else {
                 // head straight
                 ctrl.speed = WALL_FWD_PWM * 1.05;
                 ctrl.heading = 0;
             }
             break;
+        }
         case State::TURNING: {
             bool finishedTurning = false;
             // pivot clockwise until we've passed perpendicular to wall (min
