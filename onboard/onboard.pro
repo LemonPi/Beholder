@@ -19,4 +19,5 @@ HEADERS += \
     src/behaviour_control.h \
     src/behaviours/wall_turn.h \
     src/behaviours/wall_follow.h \
-    src/behaviours/common.h
+    src/behaviours/common.h \
+    src/pose.h

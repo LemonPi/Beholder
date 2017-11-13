@@ -152,13 +152,13 @@ void WallTurn::compute(BehaviourControl& ctrl) {
             }
         } while (recomputeState);
 
-        PRINT(_state);
-        PRINT(" ");
-        PRINT(_minSideDist);
-        PRINT(" ");
-        PRINT(_maxSideDist);
-        PRINT(" ");
-        PRINTLN(rightWallDist);
+        //        PRINT(_state);
+        //        PRINT(" ");
+        //        PRINT(_minSideDist);
+        //        PRINT(" ");
+        //        PRINT(_maxSideDist);
+        //        PRINT(" ");
+        //        PRINTLN(rightWallDist);
     }
 
     // either do a pivot turn or turn in place (comment out one of them)

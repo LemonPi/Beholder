@@ -164,9 +164,9 @@ void WallFollow::compute(BehaviourControl& ctrl) {
         }
     } while (recomputeState);
 
-    PRINT(_state);
-    PRINT(" ");
-    PRINT(_wallDistanceMin);
-    PRINT(" ");
-    PRINTLN(_wallDistanceCurrent);
+    //    PRINT(_state);
+    //    PRINT(" ");
+    //    PRINT(_wallDistanceMin);
+    //    PRINT(" ");
+    //    PRINTLN(_wallDistanceCurrent);
 }

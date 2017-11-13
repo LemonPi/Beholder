@@ -6,6 +6,7 @@
 
 #include "behaviour_control.h"
 #include "target.h"
+#include "pose.h"
 #include "behaviours/wall_turn.h"
 #include "behaviours/wall_follow.h"
 
@@ -19,11 +20,13 @@ class Robot {
      */
     static constexpr double WHEEL_RADIUS_LEFT_M = 50e-3;
     static constexpr double WHEEL_RADIUS_RIGHT_M = 50e-3;
+    static constexpr auto MM_PER_TICK_L = 50;
+    static constexpr auto MM_PER_TICK_R = 50;
 
     /**
-     * @brief Distance between the wheels [m]
+     * @brief Distance between the wheels [mm]
      */
-    static constexpr double BASE_LENGTH_M = 100e-3;
+    static constexpr double BASE_LENGTH = 100;
 
     static constexpr auto MAX_NUM_TARGETS = 10;
     static constexpr auto NO_TARGET = -1;
@@ -58,7 +61,7 @@ class Robot {
      * @param mc Arduino has no move semantics, but this function takes
      * ownership of the motor controller.
      */
-    Robot(MotorController leftMc, MotorController rightMc);
+    Robot(MotorController leftMc, MotorController rightMc, Pose initialPose);
 
     void turnOn();
     void turnOff();
@@ -92,6 +95,11 @@ class Robot {
     void computeAvoidBoundary();
 
     /**
+     * @brief Process encoder ticks since last cycle into change in pose.
+     * Should be called at the start of this cycle *before* any motor commands.
+     */
+    void processOdometry();
+    /**
      * @brief Convert behaviour control's input to motor control and actuate
      * motors
      */
@@ -106,6 +114,10 @@ class Robot {
     // general bookkeeping
     bool _on;
     unsigned long _lastRunTime;
+
+    // pose bookkeeping
+    unsigned long _displacementLastL, _displacementLastR;
+    Pose _pose;
 
     // motors
     MotorController _leftMc, _rightMc;

@@ -1,11 +1,12 @@
 #include <Arduino.h>
+#include <WheelEncoders.h>
 
 #include "debug.h"
 #include "robot.h"
 
-Robot::Robot(MotorController leftMc, MotorController rightMc)
-    : _on(false), _lastRunTime(0U), _leftMc(leftMc), _rightMc(rightMc),
-      _curTargetId(NO_TARGET) {
+Robot::Robot(MotorController leftMc, MotorController rightMc, Pose initialPose)
+    : _on(false), _lastRunTime(0U), _pose(initialPose), _leftMc(leftMc),
+      _rightMc(rightMc), _curTargetId(NO_TARGET) {
 
     for (int b = 0; b < BehaviourId::NUM_BEHAVIOURS; ++b) {
         _allowedBehaviours[b] = true;
@@ -41,6 +42,51 @@ void Robot::pushTarget(Target t) {
     _behaviours[BehaviourId::NAVIGATE].active = true;
 }
 
+heading_t wrapHeading(heading_t heading) {
+    if (heading > PI) {
+        heading -= 2 * PI;
+    } else if (heading < -PI) {
+        heading += 2 * PI;
+    }
+    return heading;
+}
+
+void Robot::processOdometry() {
+    const auto leftTicks = WheelEncoders::getLeftTicks();
+    const auto rightTicks = WheelEncoders::getRightTicks();
+    // clear so that if any ticks occur during execution they're not lost
+    WheelEncoders::clear();
+
+    // heuristic for determining direction the ticks were in
+    // just purely based on last cycle's PWM sign supplied to motors
+    const auto directionL = (_leftMc.getVelocity() >= 0) ? 1 : -1;
+    const auto directionR = (_rightMc.getVelocity() >= 0) ? 1 : -1;
+    _displacementLastL = directionL * leftTicks * MM_PER_TICK_L;
+    _displacementLastL = directionR * rightTicks * MM_PER_TICK_R;
+    const auto displacement = (_displacementLastL + _displacementLastR) * 0.5;
+
+    // interpolate the heading between cycles
+    const auto lastHeading = _pose.heading;
+    _pose.heading +=
+        atan2(_displacementLastL - _displacementLastR, BASE_LENGTH);
+    auto dHeading = wrapHeading(_pose.heading - lastHeading) * 0.5;
+
+    _pose.x += displacement * cos(lastHeading + dHeading);
+    _pose.y += displacement * sin(lastHeading + dHeading);
+
+    _pose.heading = wrapHeading(_pose.heading);
+
+    PRINT(leftTicks);
+    PRINT(" ");
+    PRINT(rightTicks);
+    PRINT(" x ");
+    PRINT(_pose.x);
+    PRINT(" y ");
+    PRINT(_pose.y);
+    PRINT(" h ");
+    PRINTLN(_pose.heading);
+}
+
 bool Robot::run() {
     if (_on == false) {
         return false;
@@ -50,6 +96,10 @@ bool Robot::run() {
     if ((now - _lastRunTime) < Robot::LOGIC_PERIOD_MS) {
         return false;
     }
+
+    // consider a separate, faster odometry cycle, depending on how many ticks
+    // we get per cycle
+    processOdometry();
 
     // TODO loop through behaviour layers and see which ones want to take over
     // control
@@ -112,11 +162,11 @@ void Robot::controlMotors(const BehaviourControl& control) {
     }
 
     // debugging
-    PRINT(_activeBehaviourId);
-    PRINT(" L: ");
-    PRINT(_leftMc.getVelocity());
-    PRINT(" R: ");
-    PRINTLN(_rightMc.getVelocity());
+    //    PRINT(_activeBehaviourId);
+    //    PRINT(" L: ");
+    //    PRINT(_leftMc.getVelocity());
+    //    PRINT(" R: ");
+    //    PRINTLN(_rightMc.getVelocity());
 }
 
 void Robot::processNextTarget() {
