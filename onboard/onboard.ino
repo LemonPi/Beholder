@@ -28,8 +28,8 @@ char sensorIndexName(Sonars::SonarIndex index) {
 }
 
 // wheel encoders
-constexpr auto LEFT_INTERRUPT_PIN = 21;
-constexpr auto RIGHT_INTERRUPT_PIN = 20;
+constexpr auto LEFT_INTERRUPT_PIN = 20;
+constexpr auto RIGHT_INTERRUPT_PIN = 21;
 
 // motors
 constexpr auto L_C = 22;
@@ -61,8 +61,8 @@ void loop() {
     Sonars::run();
 
     // uncomment below to test motors running with other components
-    //    leftMc.setVelocity(50);
-    //    rightMc.setVelocity(-50);
+    //    leftMc.setVelocity(0);
+    //    rightMc.setVelocity(50);
     //    leftMc.go();
     //    rightMc.go();
 

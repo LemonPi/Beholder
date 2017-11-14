@@ -42,15 +42,6 @@ void Robot::pushTarget(Target t) {
     _behaviours[BehaviourId::NAVIGATE].active = true;
 }
 
-heading_t wrapHeading(heading_t heading) {
-    if (heading > PI) {
-        heading -= 2 * PI;
-    } else if (heading < -PI) {
-        heading += 2 * PI;
-    }
-    return heading;
-}
-
 void Robot::processOdometry() {
     const auto leftTicks = WheelEncoders::getLeftTicks();
     const auto rightTicks = WheelEncoders::getRightTicks();
@@ -59,10 +50,10 @@ void Robot::processOdometry() {
 
     // heuristic for determining direction the ticks were in
     // just purely based on last cycle's PWM sign supplied to motors
-    const auto directionL = (_leftMc.getVelocity() >= 0) ? 1 : -1;
-    const auto directionR = (_rightMc.getVelocity() >= 0) ? 1 : -1;
+    const int directionL = (_leftMc.getVelocity() >= 0) ? 1 : -1;
+    const int directionR = (_rightMc.getVelocity() >= 0) ? 1 : -1;
     _displacementLastL = directionL * leftTicks * MM_PER_TICK_L;
-    _displacementLastL = directionR * rightTicks * MM_PER_TICK_R;
+    _displacementLastR = directionR * rightTicks * MM_PER_TICK_R;
     const auto displacement = (_displacementLastL + _displacementLastR) * 0.5;
 
     // interpolate the heading between cycles
@@ -79,6 +70,8 @@ void Robot::processOdometry() {
     PRINT(leftTicks);
     PRINT(" ");
     PRINT(rightTicks);
+    PRINT(" d ");
+    PRINT(displacement);
     PRINT(" x ");
     PRINT(_pose.x);
     PRINT(" y ");

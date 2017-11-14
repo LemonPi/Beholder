@@ -6,8 +6,10 @@
 #include "../debug.h"
 #include "../sonars.h"
 
+constexpr heading_t HEADING_TOLERANCE = PI / 45;
+
 // used for constant forward velocity
-static constexpr auto WALL_FWD_PWM = 220 * Robot::SPEED_SCALE;
+static constexpr auto WALL_FWD_PWM = 210 * Robot::SPEED_SCALE;
 // max turning difference
 static constexpr auto WALL_FOLLOW_TURN_PWM = 100 * Robot::SPEED_SCALE;
 static constexpr auto TURN_PWM = 150 * Robot::SPEED_SCALE;
@@ -15,9 +17,9 @@ static constexpr auto TURN_PWM = 150 * Robot::SPEED_SCALE;
 constexpr auto DESIRED_WALL_DIST_MM = 65;
 constexpr auto MAX_FOLLOW_DIST_MM = 250;
 
-constexpr auto PRE_TURN_FWD_DRIVE_MM = 40;
+constexpr auto PRE_TURN_FWD_DRIVE_MM = 15;
 constexpr auto NUM_ROUNDS_TOO_FAR_WAIT = 3;
-constexpr auto TURN_STOPPING_TOLERANCE = 10;
+constexpr auto TURN_STOPPING_TOLERANCE = 5;
 
 WallFollow::WallFollow()
     : _state(State::FOLLOWING),
@@ -83,9 +85,7 @@ void WallFollow::compute(BehaviourControl& ctrl, const Pose& robotPose) {
             // only enter our turning mode if there's no competing interior
             // corner
             // if so, use the interior corner turn behaviour instead
-            if (Sonars::getReading(Sonars::FRONT) >
-                    WallTurn::START_TURN_WHEN_IN_FRONT_MM * 1.2 &&
-                _wallDistanceCurrent > MAX_FOLLOW_DIST_MM) {
+            if (_wallDistanceCurrent > MAX_FOLLOW_DIST_MM) {
                 if (++_tooFarToFollowRounds > NUM_ROUNDS_TOO_FAR_WAIT) {
                     _preTurnStartPose = robotPose;
                     _state = State::PRE_TURN;
@@ -126,29 +126,41 @@ void WallFollow::compute(BehaviourControl& ctrl, const Pose& robotPose) {
                 recomputeState = true;
             } else {
                 // head straight
-                ctrl.speed = WALL_FWD_PWM * 1.05;
+                ctrl.speed = WALL_FWD_PWM * 0.75;
                 ctrl.heading = 0;
             }
             break;
         }
         case State::TURNING: {
             bool finishedTurning = false;
-            // pivot clockwise until we've passed perpendicular to wall (min
-            // distance)
-            if (_wallDistanceCurrent < _wallDistanceMin) {
-                _wallDistanceMin = _wallDistanceCurrent;
-            } else {
-                // passed min distance
-                if (_wallDistanceCurrent > _wallDistanceMin + TURN_DEBOUNCE) {
-                    finishedTurning = true;
-                }
+
+            const auto headingDiff =
+                headingDifference(robotPose, _preTurnStartPose);
+
+            // hard code 90 degree turn?
+            if (headingDiff > PI / 2) {
+                finishedTurning = true;
             }
+
+            //            // pivot clockwise until we've passed perpendicular to
+            //            wall (min
+            //            // distance)
+            //            if (_wallDistanceCurrent < _wallDistanceMin) {
+            //                _wallDistanceMin = _wallDistanceCurrent;
+            //            } else {
+            //                // passed min distance
+            //                if (_wallDistanceCurrent > _wallDistanceMin +
+            //                TURN_DEBOUNCE) {
+            //                    finishedTurning = true;
+            //                }
+            //            }
 
             // or if we're close enough to start following again
             if (_wallDistanceCurrent <
                 DESIRED_WALL_DIST_MM + TURN_STOPPING_TOLERANCE) {
                 finishedTurning = true;
             }
+
             // assumes we can can keep turning until we hit a wall on the right
             if (finishedTurning) {
                 reset();
@@ -164,9 +176,9 @@ void WallFollow::compute(BehaviourControl& ctrl, const Pose& robotPose) {
         }
     } while (recomputeState);
 
-    //    PRINT(_state);
-    //    PRINT(" ");
-    //    PRINT(_wallDistanceMin);
-    //    PRINT(" ");
-    //    PRINTLN(_wallDistanceCurrent);
+    PRINT(_state);
+    PRINT(" ");
+    PRINT(_wallDistanceMin);
+    PRINT(" ");
+    PRINTLN(_wallDistanceCurrent);
 }

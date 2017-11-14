@@ -14,19 +14,13 @@
  * @brief The class representing a single mobile robot entity
  */
 class Robot {
-    /**
-     * @brief Effective radius of the left wheel [m]
-     * TODO calibrate by driving straight?
-     */
-    static constexpr double WHEEL_RADIUS_LEFT_M = 50e-3;
-    static constexpr double WHEEL_RADIUS_RIGHT_M = 50e-3;
-    static constexpr auto MM_PER_TICK_L = 50;
-    static constexpr auto MM_PER_TICK_R = 50;
+    static constexpr auto MM_PER_TICK_L = 80.5 * PI / 18;
+    static constexpr auto MM_PER_TICK_R = MM_PER_TICK_L;
 
     /**
      * @brief Distance between the wheels [mm]
      */
-    static constexpr double BASE_LENGTH = 100;
+    static constexpr double BASE_LENGTH = 165;
 
     static constexpr auto MAX_NUM_TARGETS = 10;
     static constexpr auto NO_TARGET = -1;

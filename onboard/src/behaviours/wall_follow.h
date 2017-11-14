@@ -7,7 +7,7 @@
 #include "../behaviour_control.h"
 
 class WallFollow {
-    enum State { INACTIVE, FOLLOWING, PRE_TURN, TURNING, NUM_STATES };
+    enum State { INACTIVE, FOLLOWING, NUM_STATES };
 
     // gains for wall follow controller, scaled for 1s
     static constexpr auto WALL_KP = 1.5;

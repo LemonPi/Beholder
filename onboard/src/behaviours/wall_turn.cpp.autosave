@@ -52,7 +52,8 @@ void WallTurn::compute(BehaviourControl& ctrl) {
         const auto leftWallDist =
             static_cast<int>(Sonars::getReading(Sonars::LEFT));
 
-        // bad readings, skip this turn
+        // bad readings, probably due to a corner in front so can't see anything at 45 degrees
+        
         // HACK: avoid doing nothing, remove when we add targets
         if ((rightWallDist == 0 || Sonars::isTooFar(Sonars::RIGHT)) &&
             (leftWallDist == 0 || Sonars::isTooFar(Sonars::LEFT))) {

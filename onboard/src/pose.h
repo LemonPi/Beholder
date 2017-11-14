@@ -15,4 +15,18 @@ struct Pose {
  */
 coord_t distance(const Pose& a, const Pose& b);
 
+heading_t wrapHeading(heading_t heading);
+
+/**
+ * @brief a.heading - b.heading wrapped
+ * @param a
+ * @param b
+ * @return
+ */
+heading_t headingDifference(const Pose& a, const Pose& b);
+
+template <typename T> bool closeEnough(const T& a, const T& b, T epsilon) {
+    return abs(a - b) < epsilon;
+}
+
 #endif // POSE_H
