@@ -4,6 +4,7 @@
 #include "../debug.h"
 #include "../sonars.h"
 #include "wall_turn.h"
+#include "wall_follow.h"
 #include "common.h"
 
 /**
@@ -20,6 +21,9 @@ constexpr auto TURN_MIN_DIFF = 50;
 
 constexpr auto CLEARANCE_FOR_PIVOT_MM = 150;
 
+constexpr auto PRE_TURN_FWD_DRIVE_MM = 25;
+constexpr auto TURN_STOPPING_TOLERANCE = 5;
+
 // HACK: avoid doing nothing
 constexpr auto ROUNDS_ALLOWED_NO_READINGS = 2;
 
@@ -34,36 +38,58 @@ void WallTurn::reset() {
     _minSideDist = 1 << 10;
     _turnsWithNoSideReadings = 0;
 }
-void WallTurn::compute(BehaviourControl& ctrl) {
+
+bool WallTurn::turningAwayFromWall() const {
+    return _state >= INIT_AWAY_TURN && _state <= JUST_PAST_PERPENDICULAR;
+}
+bool WallTurn::turningTowardsWall() const {
+    return _state >= PRE_TURN_INTO_WALL && _state <= TURNING_INTO_WALL;
+}
+
+void WallTurn::compute(BehaviourControl& ctrl, const Pose& robotPose) {
 
     // whenever we're in front of a wall
     auto currentWallDist = Sonars::getReading(Sonars::FRONT);
+    const auto rightWallDist =
+        static_cast<int>(Sonars::getReading(Sonars::RIGHT));
+    const auto leftWallDist =
+        static_cast<int>(Sonars::getReading(Sonars::LEFT));
 
+    const auto noSideReadings =
+        (rightWallDist == 0 || Sonars::isTooFar(Sonars::RIGHT)) &&
+        (leftWallDist == 0 || Sonars::isTooFar(Sonars::LEFT));
+
+    // we also turn a right corner when we can for the right hand rule
+    if (rightWallDist > WallFollow::MAX_FOLLOW_DIST_MM) {
+        ctrl.active = true;
+        // don't break a turning away from wall if we're doing so
+        if (_state == INACTIVE) {
+            _state = PRE_TURN_INTO_WALL;
+            _preTurnStartPose = robotPose;
+            PRINTLN("[WT] start turn into wall");
+        }
+    }
+
+    // this check is after turning into a wall because it has priority
     // this takes of when we're in a dead end and 90 degrees still results in a
     // wall in front
     if (currentWallDist != 0 &&
         currentWallDist <= START_TURN_WHEN_IN_FRONT_MM) {
+        // can only start turning away if we have sides that can guide us
+        if (noSideReadings == false && turningAwayFromWall() == false) {
+            _state = INIT_AWAY_TURN;
+        }
         ctrl.active = true;
     }
 
     if (ctrl.active) {
-        const auto rightWallDist =
-            static_cast<int>(Sonars::getReading(Sonars::RIGHT));
-        const auto leftWallDist =
-            static_cast<int>(Sonars::getReading(Sonars::LEFT));
 
-        // bad readings, skip this turn
+        // bad readings, probably due to a corner in front so can't see anything
+        // at 45 degrees
+
         // HACK: avoid doing nothing, remove when we add targets
-        if ((rightWallDist == 0 || Sonars::isTooFar(Sonars::RIGHT)) &&
-            (leftWallDist == 0 || Sonars::isTooFar(Sonars::LEFT))) {
-
-            ctrl.speed = 0;
-            ctrl.heading = 0;
-
-            // HACK: avoid doing nothing when stuck
-            if (++_turnsWithNoSideReadings > ROUNDS_ALLOWED_NO_READINGS) {
-                ctrl.speed = UNSTUCK_PWM;
-            }
+        if (noSideReadings) {
+            // just keep sending our latest command
             return;
         }
 
@@ -79,15 +105,17 @@ void WallTurn::compute(BehaviourControl& ctrl) {
 
             recomputeState = false;
             switch (_state) {
-            case State::INACTIVE: {
+            case State::INIT_AWAY_TURN: {
                 auto otherSide = Sonars::LEFT;
                 // decide which side to use for turning
                 // can't use the right side to turn
                 if (leftWallDist < rightWallDist) {
                     _turnSide = Sonars::LEFT;
                     otherSide = Sonars::RIGHT;
+                    PRINTLN("[WT] turn left away from wall");
                 } else {
                     _turnSide = Sonars::RIGHT;
+                    PRINTLN("[WT] turn right away from wall");
                 }
 
                 // HACK: keep turning in place instead of pivoting if we've been
@@ -96,12 +124,14 @@ void WallTurn::compute(BehaviourControl& ctrl) {
                     Sonars::getReading(otherSide) < CLEARANCE_FOR_PIVOT_MM) {
                     _type = TurnType::IN_PLACE;
                     _turningInPlace = true;
+                    PRINTLN("[WT] turning in place");
                 }
                 // decide what type of turn to make
                 // pivot performs better according to this algorithm, but we
                 // can't pivot out of a dead end
                 else {
                     _type = TurnType::PIVOT;
+                    PRINTLN("[WT] pivoting");
                 }
 
                 _state = State::PRE_CORNER;
@@ -117,6 +147,8 @@ void WallTurn::compute(BehaviourControl& ctrl) {
                 } else if (sideDist + TURN_DEBOUNCE < _maxSideDist) {
                     _state = PRE_PERPENDICULAR;
                     recomputeState = true;
+                    PRINT("[WT] passed corner ");
+                    PRINTLN(_maxSideDist);
                 }
                 break;
             case State::PRE_PERPENDICULAR:
@@ -126,6 +158,7 @@ void WallTurn::compute(BehaviourControl& ctrl) {
                 } else if (sideDist > _maxSideDist) {
                     _state = PRE_CORNER;
                     recomputeState = true;
+                    PRINTLN("[WT] go back to corner search");
                     // we expect the difference between min and max distance
                     // (corner and perpendicular to be significant)
                     // if it's not, then likely we didn't see corner
@@ -136,6 +169,8 @@ void WallTurn::compute(BehaviourControl& ctrl) {
                            _minSideDist + TURN_MIN_DIFF < _maxSideDist) {
                     _state = State::JUST_PAST_PERPENDICULAR;
                     recomputeState = true;
+                    PRINT("[WT] past perpendicular ");
+                    PRINTLN(_minSideDist);
                 }
                 break;
             case State::JUST_PAST_PERPENDICULAR:
@@ -146,35 +181,82 @@ void WallTurn::compute(BehaviourControl& ctrl) {
                 if (currentWallDist > START_TURN_WHEN_IN_FRONT_MM) {
                     ctrl.active = false;
                     _turningInPlace = false;
+                    PRINTLN("[WT] fin turn away");
                 }
                 break;
+            case State::PRE_TURN_INTO_WALL:
+                if (distance(_preTurnStartPose, robotPose) >=
+                    PRE_TURN_FWD_DRIVE_MM) {
+                    _state = State::TURNING_INTO_WALL;
+                    recomputeState = true;
+                    PRINTLN("[WT] turn into wall");
+                } else {
+                    // head straight
+                    ctrl.speed = WallFollow::WALL_FWD_PWM * 0.75;
+                    ctrl.heading = 0;
+                }
+                break;
+            case State::TURNING_INTO_WALL: {
+                bool finishedTurning = false;
+
+                const auto headingDiff =
+                    headingDifference(robotPose, _preTurnStartPose);
+
+                // hard code 90 degree turn?
+                if (headingDiff > PI / 2) {
+                    finishedTurning = true;
+                    PRINTLN("[WT] turned into 90 deg");
+                }
+
+                // or if we're close enough to start following again
+                if (rightWallDist < WallFollow::DESIRED_WALL_DIST_MM +
+                                        TURN_STOPPING_TOLERANCE) {
+                    finishedTurning = true;
+                    PRINTLN("[WT] turned into too far");
+                }
+
+                // assumes we can can keep turning until we hit a wall on the
+                // right
+                if (finishedTurning) {
+                    reset();
+                    recomputeState = true;
+                    ctrl.active = false;
+                    PRINTLN("[WT] finished turn into");
+                } else {
+                    // pivot turn clockwise
+                    pivotTurn(ctrl, TURN_PWM, PivotMotor::RIGHT);
+                }
+                break;
+            }
             default:
                 break;
             }
         } while (recomputeState);
 
-        //        PRINT(_state);
-        //        PRINT(" ");
-        //        PRINT(_minSideDist);
-        //        PRINT(" ");
-        //        PRINT(_maxSideDist);
-        //        PRINT(" ");
-        //        PRINTLN(rightWallDist);
+        PRINT(_state);
+        PRINT(" ");
+        PRINT(_minSideDist);
+        PRINT(" ");
+        PRINT(_maxSideDist);
+        PRINT(" ");
+        PRINTLN(rightWallDist);
     }
 
-    // either do a pivot turn or turn in place (comment out one of them)
-    // counterclockwise turn
-    if (_type == TurnType::IN_PLACE) {
-        if (_turnSide == Sonars::RIGHT) {
-            inPlaceTurn(ctrl, -TURN_PWM);
-        } else {
-            inPlaceTurn(ctrl, TURN_PWM);
-        }
-    } else if (_type == TurnType::PIVOT) {
-        if (_turnSide == Sonars::RIGHT) {
-            pivotTurn(ctrl, -TURN_PWM, PivotMotor::LEFT);
-        } else {
-            pivotTurn(ctrl, TURN_PWM, PivotMotor::RIGHT);
+    if (turningAwayFromWall()) {
+        // either do a pivot turn or turn in place (comment out one of them)
+        // counterclockwise turn
+        if (_type == TurnType::IN_PLACE) {
+            if (_turnSide == Sonars::RIGHT) {
+                inPlaceTurn(ctrl, -TURN_PWM);
+            } else {
+                inPlaceTurn(ctrl, TURN_PWM);
+            }
+        } else if (_type == TurnType::PIVOT) {
+            if (_turnSide == Sonars::RIGHT) {
+                pivotTurn(ctrl, -TURN_PWM, PivotMotor::LEFT);
+            } else {
+                pivotTurn(ctrl, TURN_PWM, PivotMotor::RIGHT);
+            }
         }
     }
 }

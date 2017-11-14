@@ -7,7 +7,7 @@
 #include "../behaviour_control.h"
 
 class WallFollow {
-    enum State { INACTIVE, FOLLOWING, NUM_STATES };
+    enum State { INACTIVE, FOLLOWING, PRE_TURN, TURNING, NUM_STATES };
 
     // gains for wall follow controller, scaled for 1s
     static constexpr auto WALL_KP = 1.5;
@@ -15,12 +15,17 @@ class WallFollow {
     static constexpr auto WALL_KI = 0;
 
   public:
+    static constexpr auto MAX_FOLLOW_DIST_MM = 250;
+    // used for constant forward velocity
+    static constexpr auto WALL_FWD_PWM = 210;
+    static constexpr auto DESIRED_WALL_DIST_MM = 65;
+
     WallFollow();
 
     void followOn();
     void followOff();
 
-    void compute(BehaviourControl& ctrl, const Pose& robotPose);
+    void compute(BehaviourControl& ctrl);
 
     void reset();
 
@@ -29,12 +34,8 @@ class WallFollow {
     double _wallDistanceCurrent;
     double _wallControllerOutput;
     double _wallDistanceSetpoint;
-    double _wallDistanceMin;
 
     PID _wallFollowController;
-
-    int _tooFarToFollowRounds;
-    Pose _preTurnStartPose;
 };
 
 #endif // WALL_FOLLOW_H

@@ -16,10 +16,15 @@ void pivotTurn(BehaviourControl& ctrl, int velocity, PivotMotor pivot);
 
 class WallTurn {
     enum State {
-        INACTIVE,
+        INACTIVE = 0,
+        // turning away from a wall
+        INIT_AWAY_TURN,
         PRE_CORNER,
         PRE_PERPENDICULAR,
         JUST_PAST_PERPENDICULAR,
+        // turn into a wall
+        PRE_TURN_INTO_WALL,
+        TURNING_INTO_WALL,
         NUM_STATES
     };
 
@@ -29,12 +34,15 @@ class WallTurn {
     /**
      * @brief How far away from the wall we should start turning
      */
-    static constexpr auto START_TURN_WHEN_IN_FRONT_MM = 130;
+    static constexpr auto START_TURN_WHEN_IN_FRONT_MM = 115;
 
     WallTurn();
-    void compute(BehaviourControl& ctrl);
+    void compute(BehaviourControl& ctrl, const Pose& robotPose);
 
   private:
+    bool turningAwayFromWall() const;
+    bool turningTowardsWall() const;
+
     void reset();
 
     State _state;
@@ -49,6 +57,8 @@ class WallTurn {
     int _turnsWithNoSideReadings;
 
     bool _turningInPlace;
+
+    Pose _preTurnStartPose;
 };
 
 #endif // WALL_TURN_H

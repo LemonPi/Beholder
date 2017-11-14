@@ -97,10 +97,11 @@ bool Robot::run() {
     // TODO loop through behaviour layers and see which ones want to take over
     // control
     if (_allowedBehaviours[BehaviourId::WALL_FOLLOW]) {
-        _wallFollow.compute(_behaviours[BehaviourId::WALL_FOLLOW], _pose);
+        _wallFollow.compute(_behaviours[BehaviourId::WALL_FOLLOW]);
     }
     if (_allowedBehaviours[BehaviourId::TURN_IN_FRONT_OF_WALL]) {
-        _wallTurn.compute(_behaviours[BehaviourId::TURN_IN_FRONT_OF_WALL]);
+        _wallTurn.compute(_behaviours[BehaviourId::TURN_IN_FRONT_OF_WALL],
+                          _pose);
     }
 
     const auto lastActive = _activeBehaviourId;
