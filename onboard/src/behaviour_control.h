@@ -11,7 +11,9 @@
 struct BehaviourControl {
     BehaviourControl() = default;
     bool active;
+    // [pwm]
     speed_t speed;
+    // [pwm]
     heading_t heading;
 };
 

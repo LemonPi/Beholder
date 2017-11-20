@@ -7,6 +7,16 @@ import sys
 if sys.version < '3':
     input = raw_input
 
+
+# use when using a new BL module
+def print_nearby_devices():
+    nearby_devices = bl.discover_devices(lookup_names=True)
+    print("found %d devices" % len(nearby_devices))
+    for addr, name in nearby_devices:
+        print("  %s - %s" % (addr, name))
+
+print_nearby_devices()
+
 SPP_UID = "00001101-0000-1000-8000-00805f9b34fb"
 # for this module only
 MAC_ADDR = "00:14:03:05:D1:AE"
@@ -39,9 +49,3 @@ while True:
 sock.close()
 
 
-# use when using a new BL module
-def print_nearby_devices():
-    nearby_devices = bl.discover_devices(lookup_names=True)
-    print("found %d devices" % len(nearby_devices))
-    for addr, name in nearby_devices:
-        print("  %s - %s" % (addr, name))

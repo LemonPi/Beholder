@@ -1,18 +1,31 @@
 #include <Arduino.h>
 
+#include "debug.h"
 #include "robot.h"
 
-Robot::Robot() : _on(false), _lastRunTime(0U), _curTargetId(NO_TARGET) {
+Robot::Robot(MotorController leftMc, MotorController rightMc)
+    : _on(false), _lastRunTime(0U), _leftMc(leftMc), _rightMc(rightMc),
+      _curTargetId(NO_TARGET) {
+
     for (int b = 0; b < BehaviourId::NUM_BEHAVIOURS; ++b) {
         _allowedBehaviours[b] = true;
     }
+
+    // always wait if nothing else is active (else motor takes last command)
+    auto& wait = _behaviours[BehaviourId::WAIT];
+    wait.active = true;
+    wait.speed = 0;
+    wait.heading = 0;
 }
 
 void Robot::turnOn() {
     _on = true;
+    _wallFollow.followOn();
 }
+
 void Robot::turnOff() {
     _on = false;
+    _wallFollow.followOff();
 }
 
 void Robot::setBehaviour(BehaviourId behaviourId, bool enable) {
@@ -40,7 +53,14 @@ bool Robot::run() {
 
     // TODO loop through behaviour layers and see which ones want to take over
     // control
+    if (_allowedBehaviours[BehaviourId::WALL_FOLLOW]) {
+        _wallFollow.compute(_behaviours[BehaviourId::WALL_FOLLOW]);
+    }
+    if (_allowedBehaviours[BehaviourId::TURN_IN_FRONT_OF_WALL]) {
+        _wallTurn.compute(_behaviours[BehaviourId::TURN_IN_FRONT_OF_WALL]);
+    }
 
+    const auto lastActive = _activeBehaviourId;
     // arbitrate by selecting the layer with highest priority
     _activeBehaviourId = BehaviourId::NUM_BEHAVIOURS;
     for (int b = 0; b < BehaviourId::NUM_BEHAVIOURS; ++b) {
@@ -51,6 +71,12 @@ bool Robot::run() {
     // nothing active so just wait?
     if (_activeBehaviourId == BehaviourId::NUM_BEHAVIOURS) {
         return false;
+    }
+
+    // reset controllers if we're re-entering
+    if (_activeBehaviourId == BehaviourId::WALL_FOLLOW &&
+        lastActive != _activeBehaviourId) {
+        _wallFollow.reset();
     }
 
     // actuate motors
@@ -68,14 +94,29 @@ void Robot::controlMotors(const BehaviourControl& control) {
     // 2V + BL * H = 2 * VL
     // VL = V + BL/2 * H
     // VR = V - BL/2 * H
-    const auto vL = control.speed + control.heading * BASE_LENGTH_M / 2;
-    const auto vR = control.speed - control.heading * BASE_LENGTH_M / 2;
+    // but control units are in PWM because it's easier to reason with
+    const auto vL = control.speed + control.heading;
+    const auto vR = control.speed - control.heading;
 
-    // TODO need to convert to angular velocities?
-    // v = wR so w = v/R
-    (void)vL;
-    (void)vR;
-    // TODO send to motors
+    // TODO close loop control velocity output when encoders are added
+    // currently it's an open loop PWM value
+    _leftMc.setVelocity(vL);
+    _rightMc.setVelocity(vR);
+
+    if (vL == 0 && vR == 0) {
+        _leftMc.floatStop();
+        _rightMc.floatStop();
+    } else {
+        _leftMc.go();
+        _rightMc.go();
+    }
+
+    // debugging
+    PRINT(_activeBehaviourId);
+    PRINT(" L: ");
+    PRINT(_leftMc.getVelocity());
+    PRINT(" R: ");
+    PRINTLN(_rightMc.getVelocity());
 }
 
 void Robot::processNextTarget() {

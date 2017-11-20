@@ -1,20 +1,18 @@
 #ifndef ROBOT_H
 #define ROBOT_H
 
+#include <MotorController.h>
+#include <PID_v1.h>
+
 #include "behaviour_control.h"
 #include "target.h"
+#include "behaviours/wall_turn.h"
+#include "behaviours/wall_follow.h"
 
 /**
  * @brief The class representing a single mobile robot entity
  */
 class Robot {
-    /**
-     * @brief Minimum time [ms] between the start of
-     * run calls. Note that this assumes the time to execute run is
-     * less than itself, as otherwise we get one cycle eating into
-     * the time of the next one.
-     */
-    static constexpr auto LOGIC_PERIOD_MS = 20;
     /**
      * @brief Effective radius of the left wheel [m]
      * TODO calibrate by driving straight?
@@ -31,15 +29,36 @@ class Robot {
     static constexpr auto NO_TARGET = -1;
 
   public:
+    /**
+     * @brief Minimum time [ms] between the start of
+     * run calls. Note that this assumes the time to execute run is
+     * less than itself, as otherwise we get one cycle eating into
+     * the time of the next one.
+     */
+    static constexpr auto LOGIC_PERIOD_MS = 100;
+
+    // only using 8bit resolution for motor PWM
+    static constexpr auto MOTOR_PWM_MAX = 255;
+
+    // global speed scale
+    static constexpr auto SPEED_SCALE = 1;
     // behaviour layers ordered in increasing priority
     enum BehaviourId {
-        NAVIGATE = 0,
+        WAIT = 0,
+        NAVIGATE,
+        WALL_FOLLOW,
+        TURN_IN_FRONT_OF_WALL,
         TURN_IN_PLACE,
         AVOID_BOUNDARY,
         NUM_BEHAVIOURS
     };
 
-    Robot();
+    /**
+     * @brief Initialize robot object
+     * @param mc Arduino has no move semantics, but this function takes
+     * ownership of the motor controller.
+     */
+    Robot(MotorController leftMc, MotorController rightMc);
 
     void turnOn();
     void turnOff();
@@ -88,10 +107,17 @@ class Robot {
     bool _on;
     unsigned long _lastRunTime;
 
+    // motors
+    MotorController _leftMc, _rightMc;
+
     // behaviour bookkeeping
     BehaviourControl _behaviours[BehaviourId::NUM_BEHAVIOURS];
     bool _allowedBehaviours[BehaviourId::NUM_BEHAVIOURS];
     BehaviourId _activeBehaviourId;
+
+    // behaviour state
+    WallTurn _wallTurn;
+    WallFollow _wallFollow;
 
     // target bookkeeping
     Target _targets[MAX_NUM_TARGETS];
