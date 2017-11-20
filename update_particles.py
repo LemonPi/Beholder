@@ -8,10 +8,12 @@ from data_structure import Particle, World, SimulatedRobot, RobotSpec, DistanceS
 from display import SimulatorWindow
 
 # ---- PARTICLE FILTER PARAMS
-N_PARTICLES = 1000
+N_PARTICLES = 500
 POS_SIGMA = 0.05
-H_SIGMA = 0.1
+H_SIGMA = 0.05
 
+# ---- ROBOT BEHAVIOUR PARAMS
+WALL_DISTANCE = 0.15
 
 def update_particle_weights(robot, world, pos, h, particle_readings):
     robot_sensor_readings = robot.get_expected_sensor_outputs()
@@ -40,16 +42,21 @@ window = SimulatorWindow(text='Robot simulation')
 world = World()
 world.add_to_window(window)
 
-robot = SimulatedRobot(robot_spec, world, np.array([[1], [1]]) * Units.METERS_IN_A_FOOT,
-                       h=np.array([random.random() * np.pi * 2]))
+robot = SimulatedRobot(robot_spec, world, np.array([[0.45], [0.45]]) * Units.METERS_IN_A_FOOT,
+                       h=np.array([np.pi / 2]))
 
 scale_mat = np.array([[8 * Units.METERS_IN_A_FOOT, 0], [0, 4 * Units.METERS_IN_A_FOOT]])
 
 # Position of particles in m
-particle_pos = scale_mat @ np.random.rand(2, N_PARTICLES)
+start_x = np.random.randint(8, size=(N_PARTICLES,)) + 0.5
+start_y = np.random.randint(4, size=(N_PARTICLES,)) + 0.5
+starting_positions = np.stack((start_x, start_y), axis=0) * Units.METERS_IN_A_FOOT +  np.random.standard_normal((2, N_PARTICLES)) * POS_SIGMA
+#particle_pos = scale_mat @ np.random.rand(2, N_PARTICLES)
+particle_pos = starting_positions
 
 # Heading in radians
-particle_h = np.random.rand(N_PARTICLES) * np.pi * 2
+particle_h = np.random.randint(4, size=N_PARTICLES) * np.pi / 2 + np.random.standard_normal((N_PARTICLES,)) * H_SIGMA
+print(particle_pos.shape)
 
 # Initial weights.
 particle_readings = [Particle.get_expected_sensor_outputs(robot_spec, world, particle_pos[:, i], particle_h[i]) for i in
@@ -93,16 +100,16 @@ while not should_quit:
         if event.type == pygame.MOUSEBUTTONUP:
             mouse_clicked = True
 
-    # TODO(wheung): IMPLEMENT ROBOT BEHAVIOUR
     robot_sensor_readings = robot.get_expected_sensor_outputs()
-    while robot_sensor_readings.range < 0.05:
-        turning_angle = random.random() * np.pi * 2
-        robot.move(0, turning_angle)
+    while robot_sensor_readings.range < WALL_DISTANCE:
+        turning_angle = np.pi / 2 if np.random.random() < 0.5 else -np.pi / 2
+        robot.move(0, turning_angle + np.random.normal(scale=0.05))
         particle_pos, particle_h = Particle.move(particle_pos, particle_h, 0, turning_angle)
         robot_sensor_readings = robot.get_expected_sensor_outputs()
     # Move forward
-    robot.move(0.01, 0)
-    particle_pos, particle_h = Particle.move(particle_pos, particle_h, 0.01, 0)
+    speed = 0.015
+    robot.move(speed, 0)
+    particle_pos, particle_h = Particle.move(particle_pos, particle_h, speed, 0)
 
     # Update particle weights.
     particle_readings = [Particle.get_expected_sensor_outputs(robot_spec, world, particle_pos[:, i], particle_h[i]) for

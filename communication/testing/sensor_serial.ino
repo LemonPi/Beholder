@@ -1,34 +1,34 @@
 
-char* buffer;
-
 void setup() {
-    buffer = (char*)malloc(20);
     // start serial port at 9600 bps:
     Serial.begin(9600);
     while (!Serial) {
       ; // wait for serial port to connect. Needed for native USB port only
     }
   }
+struct sensor_struct {
+  unsigned long ts;   // 4 bytes
+  float range;        // 4 bytes
+  float right;        // 4 bytes
+  float left;         // 4 bytes
+  float colour;       // 4 bytes
+};
 
-unsigned int ts = 0;
-float sensor1 = 0.0;
-float sensor2 = 0.0;
-float sensor3 = 0.0;
-float sensor4 = 0.0;
+union sensor_packet {
+  sensor_struct sensor_data;
+  byte byte_data[sizeof(sensor_struct)];
+};
 
-
+sensor_packet packet;
+float x;
 
 void loop() {
-    unsigned int* int_buffer = (unsigned int*)buffer;
-    int_buffer[0] = ts;
-
-    float* f_buffer = (float*)buffer + sizeof(ts);
-    f_buffer[0] = sensor1;
-    f_buffer[1] = sensor2;
-    f_buffer[2] = sensor3;
-    f_buffer[3] = sensor4;
-    // Serial.write(buffer, 20);
-    Serial.println(*((long*)buffer));
-    // Serial.flush();
-    delay(1000);
+    packet.sensor_data.ts = millis();
+    packet.sensor_data.range = 0.5;
+    packet.sensor_data.right = 0.15;
+    packet.sensor_data.left = 0.15;
+    packet.sensor_data.colour = 1.0;
+    Serial.write(0xA1);
+    Serial.write(packet.byte_data, sizeof(sensor_struct));
+    delay(100);
 }
