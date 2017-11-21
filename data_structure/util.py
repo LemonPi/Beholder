@@ -3,6 +3,8 @@ import math
 import numpy as np
 np.seterr(divide='ignore', invalid='ignore')
 
+def round_to_base(x, base):
+    return base * round(float(x)/base)
 
 def cross(v, w):
     """

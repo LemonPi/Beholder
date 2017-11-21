@@ -12,7 +12,7 @@ from display import SimulatorWindow
 
 # ---- PARTICLE FILTER PARAMS
 N_PARTICLES = 1000
-POS_SIGMA = 0.05
+POS_SIGMA = 0.01
 H_SIGMA = 0.1
 
 def update_particle_weights(robot, world, pos, h, particle_readings):
@@ -54,6 +54,7 @@ def serial_reader(port, baud, spec, last_reading, sensor_readings):
         buffer = ser.read(size=packet_parser.NUM_BYTES)
         last_reading.value, readings = packet_parser.from_packet(buffer)
         sensor_readings[:] = readings
+        print(readings)
 
 # ---- SHARED MEMORY
 last_reading = mpc.Value('L', 0)

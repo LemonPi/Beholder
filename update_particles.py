@@ -14,6 +14,7 @@ H_SIGMA = 0.05
 
 # ---- ROBOT BEHAVIOUR PARAMS
 WALL_DISTANCE = 0.15
+ROBOT_SPEED = 0.5 * Units.METERS_IN_A_FOOT
 
 def update_particle_weights(robot, world, pos, h, particle_readings):
     robot_sensor_readings = robot.get_expected_sensor_outputs()
@@ -73,6 +74,7 @@ while not should_quit:
     t += 1
     # Limit fps.
     update_clock.tick(30)
+    td = update_clock.get_time()
     print("Update took {} ms".format(update_clock.get_time()))
 
     # ---- DRAW OBJECTS
@@ -107,9 +109,9 @@ while not should_quit:
         particle_pos, particle_h = Particle.move(particle_pos, particle_h, 0, turning_angle)
         robot_sensor_readings = robot.get_expected_sensor_outputs()
     # Move forward
-    speed = 0.015
-    robot.move(speed, 0)
-    particle_pos, particle_h = Particle.move(particle_pos, particle_h, speed, 0)
+    dist = ROBOT_SPEED * td / 1000
+    robot.move(dist, 0)
+    particle_pos, particle_h = Particle.move(particle_pos, particle_h, dist, 0)
 
     # Update particle weights.
     particle_readings = [Particle.get_expected_sensor_outputs(robot_spec, world, particle_pos[:, i], particle_h[i]) for
