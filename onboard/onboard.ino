@@ -6,6 +6,7 @@
 #include "src/robot.h"
 #include "src/sonars.h"
 #include "src/debug.h"
+#include "src/constants.h"
 
 // sonar sensors
 NewPing Sonars::_sonars[Sonars::NUM_SONAR] = {
@@ -26,20 +27,6 @@ char sensorIndexName(Sonars::SonarIndex index) {
         return '0';
     }
 }
-
-// wheel encoders
-constexpr auto LEFT_INTERRUPT_PIN = 20;
-constexpr auto RIGHT_INTERRUPT_PIN = 21;
-
-// motors
-constexpr auto L_C = 22;
-constexpr auto L_D = 26;
-
-constexpr auto R_C = 28;
-constexpr auto R_D = 24;
-
-constexpr auto L_ENABLE = 3;
-constexpr auto R_ENABLE = 2;
 
 MotorController leftMc(L_C, L_D, L_ENABLE);
 MotorController rightMc(R_C, R_D, R_ENABLE);
@@ -67,7 +54,7 @@ void loop() {
     //    rightMc.go();
 
     robot.setBehaviour(Robot::BehaviourId::WALL_FOLLOW, true);
-    robot.setBehaviour(Robot::BehaviourId::TURN_IN_FRONT_OF_WALL, true);
+    robot.setBehaviour(Robot::BehaviourId::TURN_IN_FRONT_OF_WALL, false);
 
     robot.run();
 

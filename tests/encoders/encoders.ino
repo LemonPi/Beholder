@@ -1,27 +1,14 @@
 #include <Arduino.h>
 #include "WheelEncoders.h"
 #include <MotorController.h>
+#include "constants.h"
 
 // pins 2 and 3 are outputs from the encoder into the Arduino
 // these are special Arduino pins (for Uno and Mega, other platforms may have different)
 // see https://www.arduino.cc/en/Reference/AttachInterrupt for the interrupt pins
-constexpr auto LEFT_INTERRUPT_PIN = 20;
-constexpr auto RIGHT_INTERRUPT_PIN = 21;
 
-
-// motors
-constexpr auto L_C = 22;
-constexpr auto L_D = 26;
-
-constexpr auto R_C = 28;
-constexpr auto R_D = 24;
-
-constexpr auto L_ENABLE = 3;
-constexpr auto R_ENABLE = 2;
-
-MotorController rightMc(L_C, L_D, L_ENABLE);
-MotorController leftMc(R_C, R_D, R_ENABLE);
-
+MotorController leftMc(L_C, L_D, L_ENABLE);
+MotorController rightMc(R_C, R_D, R_ENABLE);
 
 void setup() {
     // use these as power
@@ -33,7 +20,7 @@ void setup() {
 }
 
 void loop() {
-    leftMc.setVelocity(50);
+    // leftMc.setVelocity(50);
     rightMc.setVelocity(50);
     leftMc.go();
     rightMc.go();
