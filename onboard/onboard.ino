@@ -1,6 +1,8 @@
 // uncomment for actual execution
 //#define NDEBUG
 
+#include <WheelEncoders.h>
+
 #include "src/robot.h"
 #include "src/sonars.h"
 #include "src/debug.h"
@@ -25,6 +27,10 @@ char sensorIndexName(Sonars::SonarIndex index) {
     }
 }
 
+// wheel encoders
+constexpr auto LEFT_INTERRUPT_PIN = 20;
+constexpr auto RIGHT_INTERRUPT_PIN = 21;
+
 // motors
 constexpr auto L_C = 22;
 constexpr auto L_D = 26;
@@ -40,11 +46,14 @@ MotorController rightMc(R_C, R_D, R_ENABLE);
 
 // robot
 // motor controller fipped because we're driving in the opposite direction...
-Robot robot(rightMc, leftMc);
+Robot robot(rightMc, leftMc, Pose{0, 0, 0});
 
 void setup() {
     Serial.begin(9600);
+
     Sonars::setupPingTimers();
+    WheelEncoders::setUp(LEFT_INTERRUPT_PIN, RIGHT_INTERRUPT_PIN);
+
     robot.turnOn();
 }
 
@@ -52,8 +61,8 @@ void loop() {
     Sonars::run();
 
     // uncomment below to test motors running with other components
-    //    leftMc.setVelocity(50);
-    //    rightMc.setVelocity(-50);
+    //    leftMc.setVelocity(0);
+    //    rightMc.setVelocity(50);
     //    leftMc.go();
     //    rightMc.go();
 

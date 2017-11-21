@@ -2,11 +2,12 @@
 #define TARGET_H
 
 #include "types.h"
+#include "pose.h"
 
 /**
  * @brief A target for the robot to navigate to
  */
-struct Target {
+struct Target : public Pose {
     /**
      * @brief Type of the target (i.e. what to do there)
      */
@@ -20,8 +21,6 @@ struct Target {
         NUM_TYPES
     };
 
-    coord_t x, y;
-    heading_t heading;
     Type type;
 };
 

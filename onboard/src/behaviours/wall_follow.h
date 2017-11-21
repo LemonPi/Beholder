@@ -3,6 +3,7 @@
 
 #include <PID_v1.h>
 
+#include "../pose.h"
 #include "../behaviour_control.h"
 
 class WallFollow {
@@ -14,6 +15,11 @@ class WallFollow {
     static constexpr auto WALL_KI = 0;
 
   public:
+    static constexpr auto MAX_FOLLOW_DIST_MM = 250;
+    // used for constant forward velocity
+    static constexpr auto WALL_FWD_PWM = 210;
+    static constexpr auto DESIRED_WALL_DIST_MM = 65;
+
     WallFollow();
 
     void followOn();
@@ -28,12 +34,8 @@ class WallFollow {
     double _wallDistanceCurrent;
     double _wallControllerOutput;
     double _wallDistanceSetpoint;
-    double _wallDistanceMin;
 
     PID _wallFollowController;
-
-    int _tooFarToFollowRounds;
-    int _preTurnForwardRounds;
 };
 
 #endif // WALL_FOLLOW_H
