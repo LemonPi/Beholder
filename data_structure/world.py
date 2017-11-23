@@ -8,10 +8,11 @@ from data_structure import get_distance, get_distance_rectilinear
 from display import Drawable
 
 import time
+import pickle
 
 
 class World(Drawable):
-    def __init__(self):
+    def __init__(self, rangefinder_cache=None):
         self.maze = (
             (0, 0, 0, 0, 1, 0, 1, 0),
             (0, 0, 1, 0, 0, 0, 0, 0),
@@ -88,32 +89,7 @@ class World(Drawable):
         self.columns = len(self.maze[0])
         self.rows = len(self.maze)
 
-        MAX_X = 8*Units.METERS_IN_A_FOOT
-        MAX_Y = 4*Units.METERS_IN_A_FOOT
-        self.XY_BIN_SIZE = 0.005
-        self.H_BIN_SIZE = 0.02
-
-        X_BINS = round(MAX_X / self.XY_BIN_SIZE)
-        Y_BINS = round(MAX_Y / self.XY_BIN_SIZE)
-        H_BINS = round(2 * np.pi / self.H_BIN_SIZE)
-
-        self.dist_lookup = np.zeros((X_BINS, Y_BINS, H_BINS))
-        self.cached_raycast = False
-
-        print("Caching rangefinder data")
-        print(X_BINS, Y_BINS, H_BINS)
-        start_time = time.time()
-        for x_bin in range(X_BINS):
-            print(time.time() - start_time)
-            for y_bin in range(Y_BINS):
-                for h_bin in range(H_BINS):
-                    x = x_bin * self.XY_BIN_SIZE
-                    y = y_bin * self.XY_BIN_SIZE
-                    h = 2 * np.pi * self.H_BIN_SIZE
-                    self.dist_lookup[x_bin, y_bin, h_bin] = self.get_rangefinder_distance(x,y,h)
-        
-        self.cached_raycast = True
-        print("Done rangefinder")
+        self.rangefinder_cache = rangefinder_cache
 
     def draw(self, window):
         box_size_px = window.m_to_px(Units.METERS_IN_A_FOOT)
@@ -137,17 +113,9 @@ class World(Drawable):
         :param h: Heading in degrees CW from North
         :return: distance that a perfect rangefinder would see
         """
-        if (self.cached_raycast):
-            # bin to 3mm precision
-            xx = int(round(x / 0.03))
-            yy = int(round(y / 0.03))
-            hh = int(round(float(h) / 0.02))            
-            
-            return self.dist_lookup[xx,yy,hh]
-                
-        # We are inside a wall.
-        if not self.is_free(x, y):
-            return 0        
+        
+        if (self.rangefinder_cache):
+            return self.rangefinder_cache.get(x,y,h)
 
         min_distance = math.inf
         # For map edge:

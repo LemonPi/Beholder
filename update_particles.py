@@ -40,7 +40,12 @@ robot_spec = RobotSpec(sensors)
 
 window = SimulatorWindow(text='Robot simulation')
 
-world = World()
+# Load the rangefinder cache
+with open('range_finder_cache.pkl', 'rb') as f:
+    rangefinder_cache = pickle.load(f)
+print("Loaded rangefinder cache")
+
+world = World(rangefinder_cache=rangefinder_cache)
 world.add_to_window(window)
 
 robot = SimulatedRobot(robot_spec, world, np.array([[0.45], [0.45]]) * Units.METERS_IN_A_FOOT,
@@ -57,7 +62,6 @@ particle_pos = starting_positions
 
 # Heading in radians
 particle_h = np.random.randint(4, size=N_PARTICLES) * np.pi / 2 + np.random.standard_normal((N_PARTICLES,)) * H_SIGMA
-print(particle_pos.shape)
 
 # Initial weights.
 particle_readings = [Particle.get_expected_sensor_outputs(robot_spec, world, particle_pos[:, i], particle_h[i]) for i in
@@ -67,7 +71,7 @@ particle_weights = update_particle_weights(robot, world, particle_pos, particle_
 # Draw to screen.
 should_quit = False
 t = 0
-UPDATE_EVERY = 10
+UPDATE_EVERY = 30
 update_clock = pygame.time.Clock()
 com_pos, com_h, com_uncertainty = np.array([0, 0]), 0, np.array([1, 1, 360])
 while not should_quit:
@@ -102,12 +106,13 @@ while not should_quit:
         if event.type == pygame.MOUSEBUTTONUP:
             mouse_clicked = True
 
-    robot_sensor_readings = robot.get_expected_sensor_outputs()
+    robot_sensor_readings = robot.get_expected_sensor_outputs()    
     while robot_sensor_readings.range < WALL_DISTANCE:
         turning_angle = np.pi / 2 if np.random.random() < 0.5 else -np.pi / 2
         robot.move(0, turning_angle + np.random.normal(scale=0.05))
         particle_pos, particle_h = Particle.move(particle_pos, particle_h, 0, turning_angle)
         robot_sensor_readings = robot.get_expected_sensor_outputs()
+    
     # Move forward
     dist = ROBOT_SPEED * td / 1000
     robot.move(dist, 0)
