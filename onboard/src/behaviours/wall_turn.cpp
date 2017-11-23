@@ -60,26 +60,25 @@ void WallTurn::compute(BehaviourControl& ctrl, const Pose& robotPose) {
         (leftWallDist == 0 || Sonars::isTooFar(Sonars::LEFT));
 
     // we also turn a right corner when we can for the right hand rule
-    if (rightWallDist > WallFollow::MAX_FOLLOW_DIST_MM) {
+    // don't break a turning away from wall if we're doing so
+    // don't reset turning into wall if we're already
+    if (rightWallDist > WallFollow::MAX_FOLLOW_DIST_MM && _state == INACTIVE) {
         ctrl.active = true;
-        // don't break a turning away from wall if we're doing so
-        if (_state == INACTIVE) {
-            _state = PRE_TURN_INTO_WALL;
-            _preTurnStartPose = robotPose;
-            PRINTLN("[WT] start turn into wall");
-        }
+        _state = PRE_TURN_INTO_WALL;
+        _preTurnStartPose = robotPose;
+        PRINTLN("[WT] start turn into wall");
     }
 
     // this check is after turning into a wall because it has priority
     // this takes of when we're in a dead end and 90 degrees still results in a
     // wall in front
+    // can only start turning away if we have sides that can guide us
+    // don't reset if we're already turning away from wall
     if (currentWallDist != 0 &&
-        currentWallDist <= START_TURN_WHEN_IN_FRONT_MM) {
-        // can only start turning away if we have sides that can guide us
-        if (noSideReadings == false && turningAwayFromWall() == false) {
-            _state = INIT_AWAY_TURN;
-        }
+        currentWallDist <= START_TURN_WHEN_IN_FRONT_MM &&
+        noSideReadings == false && turningAwayFromWall() == false) {
         ctrl.active = true;
+        _state = INIT_AWAY_TURN;
     }
 
     if (ctrl.active) {
@@ -88,6 +87,7 @@ void WallTurn::compute(BehaviourControl& ctrl, const Pose& robotPose) {
         // at 45 degrees
 
         // HACK: avoid doing nothing, remove when we add targets
+        // TODO: only command this in states where side dist is important
         if (noSideReadings) {
             // just keep sending our latest command
             return;

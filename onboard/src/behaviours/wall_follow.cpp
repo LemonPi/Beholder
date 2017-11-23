@@ -66,32 +66,20 @@ void WallFollow::compute(BehaviourControl& ctrl) {
         return;
     }
 
-    bool recomputeState = false;
+    // stop following when too far; start trying to turn
+    // only enter our turning mode if there's no competing interior
+    // corner
+    // if so, use the interior corner turn behaviour instead
 
-    do {
-        recomputeState = false;
-
-        switch (_state) {
-        case State::FOLLOWING:
-            // stop following when too far; start trying to turn
-            // only enter our turning mode if there's no competing interior
-            // corner
-            // if so, use the interior corner turn behaviour instead
-
-            // can't follow if it's too far... Just drive straight a bit
-            if (_wallDistanceCurrent > MAX_FOLLOW_DIST_MM) {
-                ctrl.speed = WALL_FWD_PWM * 0.7;
-                ctrl.heading = 0;
-            } else {
-                // own proportional controller
-                ctrl.heading =
-                    (_wallDistanceCurrent - _wallDistanceSetpoint) * WALL_KP;
-                ctrl.speed = WALL_FWD_PWM - abs(ctrl.heading);
-            }
-        default:
-            break;
-        }
-    } while (recomputeState);
+    // can't follow if it's too far... Just drive straight a bit
+    if (_wallDistanceCurrent > MAX_FOLLOW_DIST_MM) {
+        ctrl.speed = WALL_FWD_PWM * 0.7;
+        ctrl.heading = 0;
+    } else {
+        // own proportional controller
+        ctrl.heading = (_wallDistanceCurrent - _wallDistanceSetpoint) * WALL_KP;
+        ctrl.speed = WALL_FWD_PWM - abs(ctrl.heading);
+    }
 
     //    PRINT(_state);
     //    PRINT(" ");

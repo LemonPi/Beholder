@@ -67,17 +67,17 @@ void Robot::processOdometry() {
 
     _pose.heading = wrapHeading(_pose.heading);
 
-    PRINT(leftTicks);
-    PRINT(" ");
-    PRINT(rightTicks);
-    PRINT(" d ");
-    PRINT(displacement);
-    PRINT(" x ");
-    PRINT(_pose.x);
-    PRINT(" y ");
-    PRINT(_pose.y);
-    PRINT(" h ");
-    PRINTLN(_pose.heading);
+    //    PRINT(leftTicks);
+    //    PRINT(" ");
+    //    PRINT(rightTicks);
+    //    PRINT(" d ");
+    //    PRINT(displacement);
+    //    PRINT(" x ");
+    //    PRINT(_pose.x);
+    //    PRINT(" y ");
+    //    PRINT(_pose.y);
+    //    PRINT(" h ");
+    //    PRINTLN(_pose.heading);
 }
 
 bool Robot::run() {
@@ -156,11 +156,11 @@ void Robot::controlMotors(const BehaviourControl& control) {
     }
 
     // debugging
-    //    PRINT(_activeBehaviourId);
-    //    PRINT(" L: ");
-    //    PRINT(_leftMc.getVelocity());
-    //    PRINT(" R: ");
-    //    PRINTLN(_rightMc.getVelocity());
+    PRINT(_activeBehaviourId);
+    PRINT(" L: ");
+    PRINT(_leftMc.getVelocity());
+    PRINT(" R: ");
+    PRINTLN(_rightMc.getVelocity());
 }
 
 void Robot::processNextTarget() {

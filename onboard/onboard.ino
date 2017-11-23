@@ -33,7 +33,7 @@ MotorController rightMc(R_C, R_D, R_ENABLE);
 
 // robot
 // motor controller fipped because we're driving in the opposite direction...
-Robot robot(rightMc, leftMc, Pose{0, 0, 0});
+Robot robot(leftMc, rightMc, Pose{0, 0, 0});
 
 void setup() {
     Serial.begin(9600);
