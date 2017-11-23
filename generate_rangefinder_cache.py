@@ -11,6 +11,6 @@ precisions = (0.005, 0.005, 0.02)
 
 range_cache = RangefinderCache.generate(world, precisions, bounds)
 
-with open('range_finder_cache.pkl', 'wb') as f:
+with open('parallel_range_finder_cache.pkl', 'wb') as f:
     pickle.dump(range_cache, f)
 print("Done generating rangefinder data")

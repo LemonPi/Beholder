@@ -1,7 +1,7 @@
-import random
-
 import numpy as np
+import pickle
 import pygame
+import random
 
 from constants import Units
 from data_structure import Particle, World, SimulatedRobot, RobotSpec, DistanceSensor, FloorSensor
@@ -9,8 +9,8 @@ from display import SimulatorWindow
 
 # ---- PARTICLE FILTER PARAMS
 N_PARTICLES = 500
-POS_SIGMA = 0.05
-H_SIGMA = 0.05
+POS_SIGMA = 0.02
+H_SIGMA = 0.02
 
 # ---- ROBOT BEHAVIOUR PARAMS
 WALL_DISTANCE = 0.15
@@ -41,7 +41,7 @@ robot_spec = RobotSpec(sensors)
 window = SimulatorWindow(text='Robot simulation')
 
 # Load the rangefinder cache
-with open('range_finder_cache.pkl', 'rb') as f:
+with open('parallel_range_finder_cache.pkl', 'rb') as f:
     rangefinder_cache = pickle.load(f)
 print("Loaded rangefinder cache")
 

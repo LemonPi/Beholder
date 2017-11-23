@@ -113,6 +113,9 @@ class World(Drawable):
         :param h: Heading in degrees CW from North
         :return: distance that a perfect rangefinder would see
         """
+
+        if not self.is_free(x, y):
+            return 0
         
         if (self.rangefinder_cache):
             return self.rangefinder_cache.get(x,y,h)
