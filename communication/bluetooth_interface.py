@@ -1,3 +1,4 @@
+# connect to BEHOLDER with pin 7331
 # simple inquiry example
 # requires PyBluez; a pain to set up on 64bit windows
 # see http://www.lfd.uci.edu/~gohlke/pythonlibs/#pybluez for 64bit wheels
@@ -7,6 +8,9 @@ import sys
 if sys.version < '3':
     input = raw_input
 
+# select one of the modes below by commenting out the other
+# SEND = True
+SEND = False
 
 # use when using a new BL module
 def print_nearby_devices():
@@ -36,15 +40,24 @@ host = bl_service["host"]
 print("connecting to \"%s\" on %s" % (name, host))
 
 # Create the client socket
-sock = bl.BluetoothSocket(bl.RFCOMM))
+sock = bl.BluetoothSocket(bl.RFCOMM)
 sock.connect((host, port))
 
-print("connected.  type stuff")
-while True:
-    data = input()
-    if len(data) == 0:
-        break
-    sock.send(data)
+# PC is a client; sends stuff to Arduino
+if SEND:
+    print("connected. type stuff")
+    while True:
+        data = input()
+        if len(data) == 0:
+            break
+        sock.send(data)
+else:
+    print("connected. receive stuff")
+    while True:
+        data = sock.recv(1024)
+        print(data)
+        # echo back
+        sock.send(data)
 
 sock.close()
 
