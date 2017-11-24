@@ -20,8 +20,11 @@ class Sensor(object):
         # Position relative to the robot origin
         self.pos = pos
 
-    def get_position(self, pos, heading):
-        pass
+    def get_position(self, rpos, heading):
+        rot = np.array([[np.cos(heading), -np.sin(heading)], 
+                         [np.sin(heading),  np.cos(heading)]])
+
+        return rot @ self.pos + rpos
     
     def get_sensor_reading(self, world, pos, heading):
         raise NotImplementedError
@@ -45,16 +48,18 @@ class DistanceSensor(Sensor):
         super().__init__(pos)
         # Orientation relative to robot
         self.orientation = orientation
-
         self.sigma = sigma
 
-    def get_sensor_reading(self, world, pos, heading):
+    def get_sensor_reading(self, world, rpos, heading):
+        pos = self.get_position(rpos, float(heading))        
         return world.get_rangefinder_distance(float(pos[0]), float(pos[1]), heading + self.orientation)
     
     def get_reading_probability(self, absolute, reading):
         return w_gauss(absolute, reading, self.sigma)
 
-    def draw(self, window, pos, heading, reading):
+    def draw(self, window, rpos, heading, reading):
+        pos = self.get_position(rpos, float(heading))
+
         h = heading + self.orientation
         dx = math.sin(h)
         dy = -math.cos(h)

@@ -15,7 +15,7 @@ class SimulatedRobot(Drawable):
         self.pos = pos
         self.h = h
 
-    def get_expected_sensor_outputs(self):
+    def get_sensor_outputs(self):
         return Particle.get_expected_sensor_outputs(self.robot_spec, self.world, self.pos, self.h)
 
     def move(self, d_d, d_h):

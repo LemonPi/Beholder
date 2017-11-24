@@ -9,7 +9,7 @@ from display import SimulatorWindow
 
 # ---- PARTICLE FILTER PARAMS
 N_PARTICLES = 500
-POS_SIGMA = 0.02
+POS_SIGMA = 0.03
 H_SIGMA = 0.02
 
 # ---- ROBOT BEHAVIOUR PARAMS
@@ -20,17 +20,18 @@ ROBOT_SPEED = 0.5 * Units.METERS_IN_A_FOOT
 # ------------------------------------------------------------
 # Define the robot we will be working with
 sensors = [
-    ('range', DistanceSensor([0, 0], 0, sigma=0.1)),
-    ('right', DistanceSensor([0, 0], np.pi / 2, sigma=0.1)),
-    ('left', DistanceSensor([0, 0], -np.pi / 2, sigma=0.1)),
-    ('floor', FloorSensor([0, 0]))]
+    ('range', DistanceSensor(np.array([[0], [0.01]]), 0, sigma=0.1)),
+    ('right', DistanceSensor(np.array([[0.01], [0]]), np.pi / 2, sigma=0.1)),
+    ('left', DistanceSensor(np.array([[-0.01], [0]]), -np.pi / 2, sigma=0.1)),
+    #('floor', FloorSensor(np.array([[0], [0]])))
+    ]
 robot_spec = RobotSpec(sensors)
 # ------------------------------------------------------------
 
 window = SimulatorWindow(text='Robot simulation')
 
 # Load the rangefinder cache
-with open('parallel_range_finder_cache.pkl', 'rb') as f:
+with open('range_finder_cache.pkl', 'rb') as f:
     rangefinder_cache = pickle.load(f)
 print("Loaded rangefinder cache")
 
@@ -42,18 +43,18 @@ robot = SimulatedRobot(robot_spec, world, np.array([[0.45], [0.45]]) * Units.MET
 
 # Create teh particle filter
 pf = ParticleFilter(N_PARTICLES, POS_SIGMA, H_SIGMA)
-pf.update_particle_weights(robot, world)
+pf.update_particle_weights(robot.robot_spec, robot.get_sensor_outputs(), world)
 
 # Draw to screen.
 should_quit = False
 t = 0
-UPDATE_EVERY = 30
+UPDATE_EVERY = 5
 update_clock = pygame.time.Clock()
 com_pos, com_h, com_uncertainty = np.array([0, 0]), 0, np.array([1, 1, 360])
 while not should_quit:
     t += 1
     # Limit fps.
-    update_clock.tick(30)
+    update_clock.tick(10)
     td = update_clock.get_time()
     print("Update took {} ms".format(update_clock.get_time()))
 
@@ -83,12 +84,12 @@ while not should_quit:
             mouse_clicked = True
 
     # Simulated robot behaviour
-    robot_sensor_readings = robot.get_expected_sensor_outputs()
+    robot_sensor_readings = robot.get_sensor_outputs()
     while robot_sensor_readings.range < WALL_DISTANCE:
         turning_angle = np.pi / 2 if np.random.random() < 0.5 else -np.pi / 2
         robot.move(0, turning_angle + np.random.normal(scale=0.05))
         pf.move_particles(0, turning_angle)
-        robot_sensor_readings = robot.get_expected_sensor_outputs()
+        robot_sensor_readings = robot.get_sensor_outputs()
     
     # Move forward
     dist = ROBOT_SPEED * td / 1000
@@ -96,7 +97,7 @@ while not should_quit:
     pf.move_particles(dist, 0)
 
     # Update particle weights.
-    pf.update_particle_weights(robot, world)
+    pf.update_particle_weights(robot.robot_spec, robot.get_sensor_outputs(), world)
 
     # Update center of mass - best estimate
     (com_pos, com_h, com_uncertainty) = pf.get_pose_estimate()

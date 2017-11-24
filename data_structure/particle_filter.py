@@ -23,15 +23,14 @@ class ParticleFilter(object):
         # Initial guess at particle probabilities
         self.particle_weights = np.zeros(self.N_PARTICLES)
 
-    def update_particle_weights(self, robot, world):
-        particle_readings = [Particle.get_expected_sensor_outputs(robot.robot_spec, world, self.particle_pos[:, i], self.particle_h[i]) for
+    def update_particle_weights(self, robot_spec, robot_sensor_readings, world):
+        particle_readings = [Particle.get_expected_sensor_outputs(robot_spec, world, self.particle_pos[:, i,np.newaxis], self.particle_h[i]) for
                          i in range(self.N_PARTICLES)]
 
-        robot_sensor_readings = robot.get_expected_sensor_outputs()
         self.particle_weights = np.zeros(self.N_PARTICLES)
         for i in range(self.N_PARTICLES):
             if Particle.is_position_valid(world, self.particle_pos[:, i]):
-                self.particle_weights[i] = Particle.get_sensor_reading_probabilities(robot.robot_spec, robot_sensor_readings,
+                self.particle_weights[i] = Particle.get_sensor_reading_probabilities(robot_spec, robot_sensor_readings,
                                                                                 particle_readings[i])
 
         self.particle_weights =  self.particle_weights / np.sum(self.particle_weights)

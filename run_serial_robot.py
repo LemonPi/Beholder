@@ -29,10 +29,11 @@ def update_particle_weights(robot, world, pos, h, particle_readings):
 # ------------------------------------------------------------
 # Define the robot we will be working with
 sensors = [
-    ('range', DistanceSensor([0, 0], 0, sigma=0.1)),
-    ('right', DistanceSensor([0, 0], np.pi/2, sigma=0.1)),
-    ('left', DistanceSensor([0, 0], -np.pi/2, sigma=0.1)),
-    ('floor', FloorSensor([0, 0]))]
+    ('range', DistanceSensor(np.array([[0], [0.01]]), 0, sigma=0.1)),
+    ('right', DistanceSensor(np.array([[0.01], [0]]), np.pi / 2, sigma=0.1)),
+    ('left', DistanceSensor(np.array([[-0.01], [0]]), -np.pi / 2, sigma=0.1)),
+    #('floor', FloorSensor(np.array([[0], [0]])))
+    ]
 robot_spec = RobotSpec(sensors)
 # ------------------------------------------------------------
 

@@ -61,10 +61,6 @@ class Particle(object):
         y_px = window.m_to_px(pos[1])
 
         draw_triangle(window.screen, x_px, y_px, h, r=5, c=colour)
-        # pygame.draw.circle(window.screen, Colours.GREEN, [x_px, y_px], int(self.w * 15))
-        # pygame.draw.circle(window.screen,
-        #                    Colours.BLACK if self.world.get_line_reading(self.x, self.y) else Colours.WHITE,
-        #                    [x_px, y_px], 2)
 
     @classmethod
     def draw_com(cls, window, com_pos, com_h, com_uncertainty):
