@@ -9,6 +9,15 @@ struct Pose {
 };
 
 /**
+ * @brief Each logic cycle we perform an odometry update. This struct holds all
+ * the data required to perform one.
+ */
+struct PoseUpdate {
+    coord_t displacement;
+    heading_t headingDiff;
+};
+
+/**
  * @brief Shortest path distance [mm] between two poses ignoring heading
  * @param a
  * @param b

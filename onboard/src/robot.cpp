@@ -52,20 +52,25 @@ void Robot::processOdometry() {
     // just purely based on last cycle's PWM sign supplied to motors
     const int directionL = (_leftMc.getVelocity() >= 0) ? 1 : -1;
     const int directionR = (_rightMc.getVelocity() >= 0) ? 1 : -1;
-    _displacementLastL = directionL * leftTicks * MM_PER_TICK_L;
-    _displacementLastR = directionR * rightTicks * MM_PER_TICK_R;
-    const auto displacement = (_displacementLastL + _displacementLastR) * 0.5;
+    const auto displacementLastL = directionL * leftTicks * MM_PER_TICK_L;
+    const auto displacementLastR = directionR * rightTicks * MM_PER_TICK_R;
+    PoseUpdate poseUpdate;
+    poseUpdate.displacement = (displacementLastL + displacementLastR) * 0.5;
 
     // interpolate the heading between cycles
     const auto lastHeading = _pose.heading;
-    _pose.heading +=
-        atan2(_displacementLastL - _displacementLastR, BASE_LENGTH);
-    auto dHeading = wrapHeading(_pose.heading - lastHeading) * 0.5;
+    _pose.heading += atan2(displacementLastL - displacementLastR, BASE_LENGTH);
+    poseUpdate.headingDiff = wrapHeading(_pose.heading - lastHeading);
 
-    _pose.x += displacement * cos(lastHeading + dHeading);
-    _pose.y += displacement * sin(lastHeading + dHeading);
+    _pose.x += poseUpdate.displacement *
+               cos(lastHeading + poseUpdate.headingDiff * 0.5);
+    _pose.y += poseUpdate.displacement *
+               sin(lastHeading + poseUpdate.headingDiff * 0.5);
 
     _pose.heading = wrapHeading(_pose.heading);
+
+    // push to front so _lastPoseUpdates[0] == poseUpdate
+    _lastPoseUpdates.unshift(poseUpdate);
 
     //    PRINT(leftTicks);
     //    PRINT(" ");

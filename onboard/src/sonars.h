@@ -2,6 +2,7 @@
 #define SONARS_H
 
 #include <NewPing.h>
+#include "types.h"
 
 class Sonars {
 
@@ -35,7 +36,7 @@ class Sonars {
      * @brief Get last sonar reading [mm]
      * @param index Index of sonar
      */
-    static unsigned int getReading(SonarIndex index);
+    static sonar_reading_t getReading(SonarIndex index);
     /**
      * @brief Check whether a reading is too far or at a very far distance
      * @param index Index of sonar
@@ -47,7 +48,7 @@ class Sonars {
     static void echoCheck();
 
     static unsigned long _nextRunMs;
-    static unsigned int _mm[NUM_SONAR];
+    static sonar_reading_t _mm[NUM_SONAR];
     //    static unsigned int _lastMm[NUM_SONAR];
     static unsigned long _pingTimer[NUM_SONAR];
     static int _consecutiveRoundsTooFar[NUM_SONAR];

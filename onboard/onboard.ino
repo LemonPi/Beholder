@@ -54,7 +54,7 @@ void loop() {
     //    rightMc.go();
 
     robot.setBehaviour(Robot::BehaviourId::WALL_FOLLOW, true);
-    robot.setBehaviour(Robot::BehaviourId::TURN_IN_FRONT_OF_WALL, false);
+    robot.setBehaviour(Robot::BehaviourId::TURN_IN_FRONT_OF_WALL, true);
 
     robot.run();
 
