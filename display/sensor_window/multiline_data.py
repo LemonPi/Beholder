@@ -1,6 +1,7 @@
 from collections import deque
 
 import matplotlib
+import matplotlib.pyplot as plt
 import pygame
 
 from .data_category import DataCategory
@@ -13,11 +14,11 @@ import numpy as np
 
 
 class MultiLineData(DataCategory):
-    def __init__(self, name, num_lines=None, maxlen=None):
-        assert num_lines is not None, 'num_lines is required for MultiLine data.'
+    def __init__(self, name, line_names=None, maxlen=None):
+        assert line_names is not None, 'line_names is required for MultiLine data.'
         assert maxlen is not None, 'maxlen is required for MultiLine data.'
         super().__init__(name)
-        self.num_lines = num_lines
+        self.num_lines = len(line_names)
 
         self._data = [deque([0] * maxlen, maxlen=maxlen) for _ in range(self.num_lines)]
         self.min = 0
@@ -28,6 +29,7 @@ class MultiLineData(DataCategory):
         pylab.title(name)
         self.ax = self.fig.gca()
         self.lines = self.ax.plot(np.array(self._data).T)
+        plt.legend(self.lines, line_names, loc='upper left')
 
     def update(self, new_data):
         assert len(new_data) == self.num_lines, 'Incorrect number of data points! {} required but {} passed.'.format(

@@ -66,7 +66,7 @@ if __name__ == '__main__':
     update_clock = pygame.time.Clock()
     window = SensorWindow(text='Data streams')
     window.add_data_category(DataType.LINE, 'sawtooth', maxlen=100)
-    window.add_data_category(DataType.MULTILINE, 'sawtooths', num_lines=2, maxlen=100)
+    window.add_data_category(DataType.MULTILINE, 'sawtooths', line_names=['-', '+'], maxlen=100)
     window.add_data_category(DataType.TEXT, 'state', max_chars=7)
     i = 0
     while True:
