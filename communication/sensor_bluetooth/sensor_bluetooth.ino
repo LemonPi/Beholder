@@ -36,21 +36,28 @@ union sensor_packet {
 sensor_packet packet;
 float x;
 uint32_t pack_num = 1;
+unsigned int last_packet = millis();
+
 
 void loop() {
-    packet.sensor_data.ts = pack_num;
-    packet.sensor_data.state = 0;
-    packet.sensor_data.dx.d = 0;
-    packet.sensor_data.dx.dh = 0;
-    packet.sensor_data.range = 500;
-    packet.sensor_data.right = 100;
-    packet.sensor_data.left = 100;
-    EEBlue.write(0xA1);
-    
-    int sent = EEBlue.write(packet.byte_data, sizeof(sensor_struct));
-    Serial.print(packet.sensor_data.ts);
-    Serial.print(" ");
-    Serial.println(sent);
-    pack_num++;
-    delay(1000);
+    unsigned long long now = millis();
+    if(now - last_packet >= 1000) {
+      packet.sensor_data.ts = pack_num;
+      packet.sensor_data.state = 0;
+      packet.sensor_data.dx.d = 0;
+      packet.sensor_data.dx.dh = 0;
+      packet.sensor_data.range = 500;
+      packet.sensor_data.right = 100;
+      packet.sensor_data.left = 100;
+      EEBlue.write(0xA1);
+      
+      int sent = EEBlue.write(packet.byte_data, sizeof(sensor_struct));      
+      pack_num++;
+      last_packet = now;
+    }
+    if (EEBlue.available()) {
+      const auto rxTime = millis();
+      const auto c = EEBlue.read();
+      Serial.println(rxTime - last_packet);
+    }
 }

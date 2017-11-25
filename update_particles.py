@@ -1,12 +1,13 @@
 import numpy as np
 import pygame
+import pickle
 
 from constants import Units
 from data_structure import Particle, World, SimulatedRobot, RobotSpec, DistanceSensor, ParticleFilter
 from display import SimulatorWindow
 
 # ---- PARTICLE FILTER PARAMS
-N_PARTICLES = 500
+N_PARTICLES = 300
 POS_SIGMA = 0.03
 H_SIGMA = 0.02
 

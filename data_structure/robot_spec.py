@@ -25,6 +25,18 @@ class SensorReadingPacketizer(object):
         results = self.struct.unpack(buffer)
         return results[0], results [1], results[2], results[3], results[4:]
 
+class PoseUpdatePacketizer(object):
+    def __init__(self):
+        format_string = "II3f"
+        self.struct = struct.Struct(format_string)
+        self.NUM_BYTES = self.struct.size
+    
+    def to_packet(self, seq_num, packet_t, x, y, h):
+        return self.struct.pack(seq_num, packet_t, x, y, h)
+    
+    def from_packet(self, buffer):
+        results = self.struct.unpack(buffer)
+        return tuple(results)
 
 def main():
     # ---- ROBOT SPEC

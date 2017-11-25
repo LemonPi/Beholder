@@ -30,12 +30,11 @@ sensors = [
     ]
 robot_spec = RobotSpec(sensors)
 
-
 # ------------------------------------------------------------
 
 # ---- SERIAL CODE
 # ------------------------------------------------------------
-def serial_reader(spec, positions, headings):
+def serial_reader(spec, positions, headings, readings):
     packet_parser = SensorReadingPacketizer(spec)
 
     # SERIAL PARAMS
@@ -87,7 +86,7 @@ def serial_reader(spec, positions, headings):
 
 # ---- BLUETOOTH CODE
 # ------------------------------------------------------------
-def bluetooth_reader(spec, positions, headings):
+def bluetooth_reader(spec, shm_positions, shm_headings, shm_readings):
     packet_parser = SensorReadingPacketizer(spec)
 
     # ---- BLUETOOTH SETUP
@@ -112,7 +111,7 @@ def bluetooth_reader(spec, positions, headings):
     # Create the client socket
     sock = bl.BluetoothSocket(bl.RFCOMM)
     sock.connect((host, port))
-    _ = sock.recv(2048)     # RECV trash
+    _ = sock.recv(10000)     # Get rid of all trash
     sock.setblocking(True)
 
     # ---- PARTICLE FILTER SETUP
@@ -124,6 +123,14 @@ def bluetooth_reader(spec, positions, headings):
 
     # Create the particle filter
     pf = ParticleFilter(N_PARTICLES, POS_SIGMA, H_SIGMA)
+
+    # Wait for the start signal
+    print("Waiting for start signal")
+    while(True):
+        char_in = sock.recv(1)
+        if (char_in == b'\xa2'):
+            print('Starting...')            
+            break
 
     update_num = 1
     last_packet = time.time()
@@ -158,9 +165,15 @@ def bluetooth_reader(spec, positions, headings):
         if(update_num % UPDATE_EVERY == 0):
             pf.resample()
 
+        # print("Update took: {}".format(time.time() - packet_time))
+
+        # Send a result back
+        sock.send(b'\xa1')
+
         # Shared memory
-        positions[:] = list(pf.particle_pos.reshape(2*N_PARTICLES,))
-        headings[:] = list(pf.particle_h)
+        shm_positions[:] = list(pf.particle_pos.reshape(2*N_PARTICLES,))
+        shm_headings[:] = list(pf.particle_h)
+        shm_readings[:] = [x/1000.0 for x in readings]
 
         update_num += 1
         last_packet = packet_time
@@ -170,11 +183,12 @@ def bluetooth_reader(spec, positions, headings):
 # Share the robot position and heading
 positions = mpc.Array('f', 2*N_PARTICLES)
 headings = mpc.Array('f', N_PARTICLES)
+readings = mpc.Array('f', len(robot_spec.sensors))
 
 pacman = SensorReadingPacketizer(robot_spec)
 
 #p = mpc.Process(target=serial_reader, args=(robot_spec, positions, headings))
-p = mpc.Process(target=bluetooth_reader, args=(robot_spec, positions, headings))
+p = mpc.Process(target=bluetooth_reader, args=(robot_spec, positions, headings, readings))
 p.start()
 # ------------------------------------------------------------
 
@@ -185,33 +199,47 @@ window = SimulatorWindow(text='Robot simulation')
 world = World()
 world.add_to_window(window)
 
+# Shell of the robot class for localized robots
+robot = SensorRobot(robot_spec)
+
 # Draw to screen.
 should_quit = False
 t = 0
 update_clock = pygame.time.Clock()
-com_pos, com_h, com_uncertainty = np.array([0, 0]), 0, np.array([1, 1, 360])
+com_pos, com_h, com_uncertainty, is_converged = np.array([0, 0]), 0, np.array([1, 1]), False
+
 while not should_quit:
     t += 1
     # Limit fps.
     update_clock.tick(40)
 
-    # ---- DRAW OBJECTS
-    # ------------------------------------------------------------
-    window.draw()
-
     # Extract positions and headings
     particle_pos = np.array(positions[:]).reshape((2, N_PARTICLES))
     particle_h = np.array(headings[:])
 
+    # FIND COM
+    com_pos = np.mean(particle_pos, axis=1)
+    com_h = np.mean(particle_h)
+    com_uncertainty = np.std(particle_pos, axis=1)
+    is_converged = np.all(2 * com_uncertainty < 0.2)    
+
+    # ---- DRAW OBJECTS
+    # ------------------------------------------------------------
+    window.draw()    
+
     for i in range(N_PARTICLES):
         Particle.draw(window, particle_pos[:, i], particle_h[i])
-        
-    #com_pos = np.mean(particle_pos, axis=1)
-    #com_h = np.mean(particle_h)
-    #com_uncertainty = np.std(np.concatenate([particle_pos, np.expand_dims(particle_h, 0)], axis=0), axis=0)
     
     # Draw the center of mass position and heading
-    #Particle.draw_com(window, com_pos, com_h, com_uncertainty)
+    Particle.draw_com(window, com_pos, com_h, com_uncertainty)
+    
+    # Set the variables on the robot
+    robot.localized = is_converged
+    robot.pos = com_pos
+    robot.h = com_h
+    robot.sensor_readings = readings[:]
+
+    #robot.draw(window)
 
     # Go ahead and update the screen with what we've drawn.
     # This MUST happen after all the other drawing commands.
