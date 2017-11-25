@@ -11,3 +11,4 @@ DerivePointerAlignment: false
 PointerAlignment: Left
 AllowShortBlocksOnASingleLine: false
 AllowShortFunctionsOnASingleLine: None
+AlwaysBreakTemplateDeclarations: true

@@ -15,6 +15,8 @@ struct Pose {
 struct PoseUpdate {
     coord_t displacement;
     heading_t headingDiff;
+
+    static constexpr auto SERIALIZED_SIZE = sizeof(coord_t) + sizeof(heading_t);
 };
 
 /**
@@ -34,7 +36,8 @@ heading_t wrapHeading(heading_t heading);
  */
 heading_t headingDifference(const Pose& a, const Pose& b);
 
-template <typename T> bool closeEnough(const T& a, const T& b, T epsilon) {
+template <typename T>
+bool closeEnough(const T& a, const T& b, T epsilon) {
     return abs(a - b) < epsilon;
 }
 

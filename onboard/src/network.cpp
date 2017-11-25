@@ -7,10 +7,10 @@ SoftwareSerial Network::_blueTooth(BL_RX, BL_TX);
 size_t Network::_pcPacketIndex = 0;
 Network::RxState Network::_rxState = Network::RxState::WAIT_FOR_START;
 
-Network::R::Packet Network::_robotPacket;
+uint8_t Network::_robotPacketBuf[Network::R::PACKET_SIZE];
 Network::PC::Packet Network::_pcPacket;
 
-bool Network::begin(uint32_t baudRate) {
+void Network::begin(uint32_t baudRate) {
     _blueTooth.begin(baudRate);
 }
 
@@ -19,19 +19,27 @@ bool Network::sendRobotPacket(const PoseUpdate& poseUpdate,
     // whenever we send a packet increment the sequence number
     // so that the time after sending the packet the sequence number refers to
     // the last sent packet
-    _robotPacket.packetData.sequenceNum = ++_sequenceNum;
-    _robotPacket.packetData.poseUpdate = poseUpdate;
-    _robotPacket.packetData.activeBehaviourId = activeBehaviourId;
+    uint8_t serializationIndex = 0;
+    serialize(_robotPacketBuf, serializationIndex, ++_sequenceNum);
+    serialize(_robotPacketBuf, serializationIndex, poseUpdate.displacement);
+    serialize(_robotPacketBuf, serializationIndex, poseUpdate.headingDiff);
     for (auto i = 0; i < Sonars::NUM_SONAR; ++i) {
-        _robotPacket.packetData.sonarReadings[i] =
-            Sonars::getReading(static_cast<Sonars::SonarIndex>(i));
+        serialize(_robotPacketBuf, serializationIndex,
+                  Sonars::getReading(static_cast<Sonars::SonarIndex>(i)));
+    }
+    serialize(_robotPacketBuf, serializationIndex, activeBehaviourId);
+
+    if (serializationIndex != R::PACKET_SIZE) {
+        ERROR(5);
+        PRINTLN(serializationIndex);
+        return false;
     }
 
     _blueTooth.write(R::PACKET_START_BYTE);
     const auto sentBytes =
-        _blueTooth.write(_robotPacket.byteData, R::PACKET_SIZE);
+        _blueTooth.write(_robotPacketBuf, serializationIndex);
 
-    if (sentBytes != R::PACKET_SIZE) {
+    if (sentBytes != serializationIndex) {
         ERROR(4);
         PRINTLN(sentBytes);
         return false;

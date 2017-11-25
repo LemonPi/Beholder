@@ -5,13 +5,6 @@
 #include "pose.h"
 #include "sonars.h"
 
-struct RobotPacketData {
-    PoseUpdate poseUpdate;
-    sonar_reading_t sonarReadings[Sonars::NUM_SONAR];
-    sequence_num_t sequenceNum;
-    uint8_t activeBehaviourId;
-};
-
 /**
  * Value associated with each PC packet to indicate intent
  * of the contained pose (waypoint or pose update)
@@ -23,19 +16,22 @@ struct PCPacketData {
     pc_packet_intent_t intent;
 };
 
+template <typename T>
+void serialize(uint8_t* buffer, uint8_t& index, T value) {
+    memcpy(buffer + index, &value, sizeof(T));
+    index += sizeof(T);
+}
+
 /**
  * @brief The Network class
  */
 class Network {
     struct R {
-        static constexpr auto PACKET_SIZE = sizeof(RobotPacketData);
+        static constexpr auto PACKET_SIZE =
+            PoseUpdate::SERIALIZED_SIZE +
+            sizeof(sonar_reading_t) * Sonars::NUM_SONAR +
+            sizeof(sequence_num_t) + sizeof(uint8_t);
         static constexpr char PACKET_START_BYTE = 0xA1;
-
-        union Packet {
-            RobotPacketData packetData;
-            // data in byte form
-            byte byteData[PACKET_SIZE];
-        };
     };
 
     struct PC {
@@ -52,7 +48,7 @@ class Network {
     enum RxState { WAIT_FOR_START, READING, HAVE_VALID_PACKET };
 
   public:
-    static bool begin(uint32_t baudRate);
+    static void begin(uint32_t baudRate);
     /**
      * @brief Send packet from robot containing the pose update for this logic
      * cycle and sensor readings
@@ -79,7 +75,7 @@ class Network {
   private:
     // robot sending
     static sequence_num_t _sequenceNum;
-    static R::Packet _robotPacket;
+    static uint8_t _robotPacketBuf[R::PACKET_SIZE];
 
     // pc sending
     static PC::Packet _pcPacket;

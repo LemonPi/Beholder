@@ -2,7 +2,7 @@
 
 // note _sonars have to be initialized in main with pins
 // NewPing Sonars::_sonars[NUM_SONAR];
-unsigned int Sonars::_mm[NUM_SONAR];
+sonar_reading_t Sonars::_mm[NUM_SONAR];
 // unsigned int Sonars::_lastMm[NUM_SONAR];
 unsigned long Sonars::_pingTimer[NUM_SONAR];
 int Sonars::_consecutiveRoundsTooFar[NUM_SONAR];
@@ -56,7 +56,7 @@ void Sonars::echoCheck() {
     }
 }
 
-unsigned int Sonars::getReading(SonarIndex index) {
+sonar_reading_t Sonars::getReading(SonarIndex index) {
     return _mm[index];
 }
 
