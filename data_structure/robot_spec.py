@@ -14,7 +14,7 @@ class RobotSpec(object):
 
 class SensorReadingPacketizer(object):
     def __init__(self, robot_spec):
-        format_string = "IIff" + "I"*len(robot_spec.sensors)
+        format_string = "Iff" + "I"*len(robot_spec.sensors) + "B"
         self.struct = struct.Struct(format_string)
         self.NUM_BYTES = self.struct.size
     
@@ -23,7 +23,7 @@ class SensorReadingPacketizer(object):
     
     def from_packet(self, buffer):
         results = self.struct.unpack(buffer)
-        return results[0], results [1], results[2], results[3], results[4:]
+        return results[0], results[1], results[2], results[3:6], results[6]
 
 class PoseUpdatePacketizer(object):
     def __init__(self):

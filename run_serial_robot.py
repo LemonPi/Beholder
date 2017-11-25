@@ -126,11 +126,11 @@ def bluetooth_reader(spec, shm_positions, shm_headings, shm_readings):
 
     # Wait for the start signal
     print("Waiting for start signal")
-    while(True):
-        char_in = sock.recv(1)
-        if (char_in == b'\xa2'):
-            print('Starting...')            
-            break
+    # while(True):
+    #     char_in = sock.recv(1)
+    #     if (char_in == b'\xa2'):
+    #         print('Starting...')            
+    #         break
 
     update_num = 1
     last_packet = time.time()
@@ -140,12 +140,12 @@ def bluetooth_reader(spec, shm_positions, shm_headings, shm_readings):
         while(True):
             char_in = sock.recv(1)
             # Check the reset character
-            if (char_in == b'\xa2'):
-                print('Resetting...')
-                # Reset the particle filter
-                update_num = 1
-                pf = ParticleFilter(N_PARTICLES, POS_SIGMA, H_SIGMA)
-                break
+            # if (char_in == b'\xa2'):
+            #     print('Resetting...')
+            #     # Reset the particle filter
+            #     update_num = 1
+            #     pf = ParticleFilter(N_PARTICLES, POS_SIGMA, H_SIGMA)
+            #     break
             # Wait for start character
             if (char_in == b'\xa1'):
                 break
@@ -157,7 +157,7 @@ def bluetooth_reader(spec, shm_positions, shm_headings, shm_readings):
             b = sock.recv(1)
             buffer += b
 
-        identifier, state, d, dh, readings = packet_parser.from_packet(buffer)
+        identifier, d, dh, readings, state = packet_parser.from_packet(buffer)
         print(identifier, d, dh, readings, packet_time - last_packet)
         pf.update_particle_weights(robot_spec, [x/1000.0 for x in readings], world)
         pf.move_particles(d, dh)      # Move the robot according to the encoder readings
@@ -221,7 +221,7 @@ while not should_quit:
     com_pos = np.mean(particle_pos, axis=1)
     com_h = np.mean(particle_h)
     com_uncertainty = np.std(particle_pos, axis=1)
-    is_converged = np.all(2 * com_uncertainty < 0.2)    
+    is_converged = np.all(2 * com_uncertainty < 0.4)    
 
     # ---- DRAW OBJECTS
     # ------------------------------------------------------------
@@ -235,11 +235,11 @@ while not should_quit:
     
     # Set the variables on the robot
     robot.localized = is_converged
-    robot.pos = com_pos
+    robot.pos = np.reshape(com_pos, (2,1))
     robot.h = com_h
     robot.sensor_readings = readings[:]
 
-    #robot.draw(window)
+    robot.draw(window)
 
     # Go ahead and update the screen with what we've drawn.
     # This MUST happen after all the other drawing commands.
