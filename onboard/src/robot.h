@@ -21,7 +21,7 @@ class Robot {
     /**
      * @brief Distance between the wheels [mm]
      */
-    static constexpr double BASE_LENGTH = 165;
+    static constexpr double BASE_LENGTH = 143.8 + 8.8;
 
     static constexpr auto MAX_NUM_TARGETS = 10;
     static constexpr auto NO_TARGET = -1;
