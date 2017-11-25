@@ -14,16 +14,16 @@ class RobotSpec(object):
 
 class SensorReadingPacketizer(object):
     def __init__(self, robot_spec):
-        format_string = "I" + "f"*len(robot_spec.sensors)
+        format_string = "IIff" + "I"*len(robot_spec.sensors)
         self.struct = struct.Struct(format_string)
         self.NUM_BYTES = self.struct.size
     
-    def to_packet(self, sensor_readings):
-        return self.struct.pack(int(time.time() * 1000), *sensor_readings)
+    def to_packet(self, t, d, dh, sensor_readings):
+        return self.struct.pack(t, d, dh, *sensor_readings)
     
     def from_packet(self, buffer):
         results = self.struct.unpack(buffer)
-        return results[0], results[1:]
+        return results[0], results [1], results[2], results[3], results[4:]
 
 
 def main():

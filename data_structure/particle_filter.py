@@ -41,8 +41,8 @@ class ParticleFilter(object):
             (2, self.N_PARTICLES)) * self.POS_SIGMA
         self.particle_h = np.take(self.particle_h, particle_samples) + np.random.standard_normal((self.N_PARTICLES,)) * self.H_SIGMA
 
-    def move_particles(self, dist, heading):
-        self.particle_pos, self.particle_h = Particle.move(self.particle_pos, self.particle_h, dist, heading)
+    def move_particles(self, d, dh):
+        self.particle_pos, self.particle_h = Particle.move(self.particle_pos, self.particle_h, d, dh)
 
     def get_pose_estimate(self):
         com_pos = np.mean(self.particle_pos, axis=1)

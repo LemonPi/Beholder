@@ -7,11 +7,12 @@ void setup() {
     }
   }
 struct sensor_struct {
-  unsigned long ts;   // 4 bytes
-  float range;        // 4 bytes
-  float right;        // 4 bytes
-  float left;         // 4 bytes
-  float colour;       // 4 bytes
+  unsigned long ts;           // 4 bytes
+  float d;                    // 4 bytes
+  float dh;                   // 4 bytes
+  unsigned long range;        // 4 bytes
+  unsigned long right;        // 4 bytes
+  unsigned long left;         // 4 bytes
 };
 
 union sensor_packet {
@@ -24,10 +25,11 @@ float x;
 
 void loop() {
     packet.sensor_data.ts = millis();
-    packet.sensor_data.range = 0.5;
-    packet.sensor_data.right = 0.15;
-    packet.sensor_data.left = 0.15;
-    packet.sensor_data.colour = 1.0;
+    packet.sensor_data.d = 0;
+    packet.sensor_data.dh = 0;
+    packet.sensor_data.range = 500;
+    packet.sensor_data.right = 100;
+    packet.sensor_data.left = 100;
     Serial.write(0xA1);
     Serial.write(packet.byte_data, sizeof(sensor_struct));
     delay(100);

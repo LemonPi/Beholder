@@ -41,7 +41,7 @@ world.add_to_window(window)
 robot = SimulatedRobot(robot_spec, world, np.array([[0.45], [0.45]]) * Units.METERS_IN_A_FOOT,
                        h=np.array([np.pi / 2]))
 
-# Create teh particle filter
+# Create the particle filter
 pf = ParticleFilter(N_PARTICLES, POS_SIGMA, H_SIGMA)
 pf.update_particle_weights(robot.robot_spec, robot.get_sensor_outputs(), world)
 

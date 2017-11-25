@@ -10,7 +10,7 @@ if sys.version < '3':
 
 # select one of the modes below by commenting out the other
 # SEND = True
-SEND = False
+SEND = True
 
 # use when using a new BL module
 def print_nearby_devices():
