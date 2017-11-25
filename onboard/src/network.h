@@ -52,6 +52,7 @@ class Network {
     enum RxState { WAIT_FOR_START, READING, HAVE_VALID_PACKET };
 
   public:
+    static bool begin(uint32_t baudRate);
     /**
      * @brief Send packet from robot containing the pose update for this logic
      * cycle and sensor readings

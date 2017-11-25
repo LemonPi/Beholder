@@ -10,6 +10,10 @@ Network::RxState Network::_rxState = Network::RxState::WAIT_FOR_START;
 Network::R::Packet Network::_robotPacket;
 Network::PC::Packet Network::_pcPacket;
 
+bool Network::begin(uint32_t baudRate) {
+    _blueTooth.begin(baudRate);
+}
+
 bool Network::sendRobotPacket(const PoseUpdate& poseUpdate,
                               uint8_t activeBehaviourId) {
     // whenever we send a packet increment the sequence number

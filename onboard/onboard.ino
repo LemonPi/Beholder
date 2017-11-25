@@ -7,6 +7,7 @@
 #include "src/sonars.h"
 #include "src/debug.h"
 #include "src/constants.h"
+#include "src/network.h"
 
 // sonar sensors
 NewPing Sonars::_sonars[Sonars::NUM_SONAR] = {
@@ -38,8 +39,9 @@ Robot robot(leftMc, rightMc, Pose{0, 0, 0});
 void setup() {
     Serial.begin(9600);
 
-    Sonars::setupPingTimers();
+    // Sonars::setupPingTimers();
     WheelEncoders::setUp(LEFT_INTERRUPT_PIN, RIGHT_INTERRUPT_PIN);
+    Network::begin(9600);
 
     robot.turnOn();
 }

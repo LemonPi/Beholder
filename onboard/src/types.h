@@ -10,9 +10,9 @@ using speed_t = float;
 using heading_t = float;
 
 // sequence number for network exchanges (32 bit)
-using sequence_num_t = unsigned int;
+using sequence_num_t = uint32_t;
 
 // [mm]
-using sonar_reading_t = unsigned int;
+using sonar_reading_t = uint32_t;
 
 #endif // TYPES_H
