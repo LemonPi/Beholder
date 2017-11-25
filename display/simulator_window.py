@@ -37,3 +37,12 @@ class SimulatorWindow(object):
 
         for uid, d in self.drawables.items():
             d.draw(self)
+
+if __name__ == '__main__':
+
+    update_clock = pygame.time.Clock()
+    while True:
+        window = SimulatorWindow(text='Robot simulation')
+        window.draw()
+        pygame.display.flip()
+        update_clock.tick(30)
