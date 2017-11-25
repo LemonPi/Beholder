@@ -2,13 +2,14 @@
 #define ROBOT_H
 
 #include <MotorController.h>
-#include <PID_v1.h>
+#include <CircularBuffer.h>
 
 #include "behaviour_control.h"
 #include "target.h"
 #include "pose.h"
 #include "behaviours/wall_turn.h"
 #include "behaviours/wall_follow.h"
+#include "network.h"
 
 /**
  * @brief The class representing a single mobile robot entity
@@ -20,10 +21,15 @@ class Robot {
     /**
      * @brief Distance between the wheels [mm]
      */
-    static constexpr double BASE_LENGTH = 165;
+    static constexpr double BASE_LENGTH = 143.8 + 8.8;
 
     static constexpr auto MAX_NUM_TARGETS = 10;
     static constexpr auto NO_TARGET = -1;
+
+    // number of past pose updates to keep
+    // should be the maximum number of cycles of latency between network
+    // communication
+    static constexpr auto MAX_NUM_POSE_UPDATES = 10;
 
   public:
     /**
@@ -110,7 +116,7 @@ class Robot {
     unsigned long _lastRunTime;
 
     // pose bookkeeping
-    unsigned long _displacementLastL, _displacementLastR;
+    CircularBuffer<PoseUpdate, MAX_NUM_POSE_UPDATES> _lastPoseUpdates;
     Pose _pose;
 
     // motors

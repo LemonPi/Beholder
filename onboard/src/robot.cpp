@@ -3,6 +3,7 @@
 
 #include "debug.h"
 #include "robot.h"
+#include "network.h"
 
 Robot::Robot(MotorController leftMc, MotorController rightMc, Pose initialPose)
     : _on(false), _lastRunTime(0U), _pose(initialPose), _leftMc(leftMc),
@@ -52,20 +53,25 @@ void Robot::processOdometry() {
     // just purely based on last cycle's PWM sign supplied to motors
     const int directionL = (_leftMc.getVelocity() >= 0) ? 1 : -1;
     const int directionR = (_rightMc.getVelocity() >= 0) ? 1 : -1;
-    _displacementLastL = directionL * leftTicks * MM_PER_TICK_L;
-    _displacementLastR = directionR * rightTicks * MM_PER_TICK_R;
-    const auto displacement = (_displacementLastL + _displacementLastR) * 0.5;
+    const auto displacementLastL = directionL * leftTicks * MM_PER_TICK_L;
+    const auto displacementLastR = directionR * rightTicks * MM_PER_TICK_R;
+    PoseUpdate poseUpdate;
+    poseUpdate.displacement = (displacementLastL + displacementLastR) * 0.5;
 
     // interpolate the heading between cycles
     const auto lastHeading = _pose.heading;
-    _pose.heading +=
-        atan2(_displacementLastL - _displacementLastR, BASE_LENGTH);
-    auto dHeading = wrapHeading(_pose.heading - lastHeading) * 0.5;
+    _pose.heading += atan2(displacementLastL - displacementLastR, BASE_LENGTH);
+    poseUpdate.headingDiff = wrapHeading(_pose.heading - lastHeading);
 
-    _pose.x += displacement * cos(lastHeading + dHeading);
-    _pose.y += displacement * sin(lastHeading + dHeading);
+    _pose.x += poseUpdate.displacement *
+               cos(lastHeading + poseUpdate.headingDiff * 0.5);
+    _pose.y += poseUpdate.displacement *
+               sin(lastHeading + poseUpdate.headingDiff * 0.5);
 
     _pose.heading = wrapHeading(_pose.heading);
+
+    // push to front so _lastPoseUpdates[0] == poseUpdate
+    _lastPoseUpdates.unshift(poseUpdate);
 
     //    PRINT(leftTicks);
     //    PRINT(" ");
@@ -84,6 +90,16 @@ bool Robot::run() {
     if (_on == false) {
         return false;
     }
+
+    // network reception is run as fast as possible
+    if (Network::recvPcPacket()) {
+        const auto pcUpdate = Network::getLatestPCPacket();
+        // TODO handle PC update (note always updates before applying this
+        // cycle's pose update)
+
+        Network::resetPcPacket();
+    }
+
     const auto now = millis();
     // not yet for next logic cycle
     if ((now - _lastRunTime) < Robot::LOGIC_PERIOD_MS) {
@@ -112,10 +128,6 @@ bool Robot::run() {
             _activeBehaviourId = static_cast<BehaviourId>(b);
         }
     }
-    // nothing active so just wait?
-    if (_activeBehaviourId == BehaviourId::NUM_BEHAVIOURS) {
-        return false;
-    }
 
     // reset controllers if we're re-entering
     if (_activeBehaviourId == BehaviourId::WALL_FOLLOW &&
@@ -126,6 +138,8 @@ bool Robot::run() {
     // actuate motors
     controlMotors(_behaviours[_activeBehaviourId]);
 
+    // send pose update and sensors to PC
+    Network::sendRobotPacket(_lastPoseUpdates[0], _activeBehaviourId);
     // only assign it if we're sure this run was successful
     _lastRunTime = now;
     return true;

@@ -8,7 +8,8 @@ SOURCES += \
     src/robot.cpp \
     src/sonars.cpp \
     src/behaviours/wall_turn.cpp \
-    src/pose.cpp
+    src/pose.cpp \
+    src/network.cpp
 
 HEADERS += \
     onboard.ino \
@@ -22,4 +23,5 @@ HEADERS += \
     src/behaviours/wall_follow.h \
     src/behaviours/common.h \
     src/pose.h \
-    src/constants.h
+    src/constants.h \
+    src/network.h
