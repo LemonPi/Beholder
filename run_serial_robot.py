@@ -1,19 +1,18 @@
-import random
-import time
-
 import multiprocessing as mpc
+
 import numpy as np
 import pygame
 import serial
 
 from constants import Units
-from data_structure import World, Particle, SimulatedRobot, RobotSpec, FloorSensor, DistanceSensor, SensorReadingPacketizer, SensorRobot
+from data_structure import World, Particle, RobotSpec, DistanceSensor, SensorReadingPacketizer, SensorRobot
 from display import SimulatorWindow
 
 # ---- PARTICLE FILTER PARAMS
 N_PARTICLES = 1000
 POS_SIGMA = 0.01
 H_SIGMA = 0.1
+
 
 def update_particle_weights(robot, world, pos, h, particle_readings):
     time_stamp, robot_sensor_readings = robot.get_sensor_outputs()
@@ -25,6 +24,7 @@ def update_particle_weights(robot, world, pos, h, particle_readings):
 
     return particle_weights / np.sum(particle_weights)
 
+
 # ---- ROBOT SPEC
 # ------------------------------------------------------------
 # Define the robot we will be working with
@@ -32,9 +32,11 @@ sensors = [
     ('range', DistanceSensor(np.array([[0], [0.01]]), 0, sigma=0.1)),
     ('right', DistanceSensor(np.array([[0.01], [0]]), np.pi / 2, sigma=0.1)),
     ('left', DistanceSensor(np.array([[-0.01], [0]]), -np.pi / 2, sigma=0.1)),
-    #('floor', FloorSensor(np.array([[0], [0]])))
-    ]
+    # ('floor', FloorSensor(np.array([[0], [0]])))
+]
 robot_spec = RobotSpec(sensors)
+
+
 # ------------------------------------------------------------
 
 # ---- SERIAL CODE
@@ -46,8 +48,8 @@ def serial_reader(port, baud, spec, last_reading, sensor_readings):
     ser.reset_input_buffer()
     print(ser.in_waiting)
 
-    while(True):
-        while(True):
+    while (True):
+        while (True):
             char_in = ser.read(size=1)
             # Start character
             if (char_in == b'\xa1'):
@@ -57,12 +59,13 @@ def serial_reader(port, baud, spec, last_reading, sensor_readings):
         sensor_readings[:] = readings
         print(readings)
 
+
 # ---- SHARED MEMORY
 last_reading = mpc.Value('L', 0)
 sensor_reading = mpc.Array('f', range(len(robot_spec.sensors)))
 
 pacman = SensorReadingPacketizer(robot_spec)
-robot = SensorRobot(robot_spec, last_reading, sensor_reading, np.array([[0.2],[0.2]]), np.array([np.pi/2]))
+robot = SensorRobot(robot_spec, last_reading, sensor_reading, np.array([[0.2], [0.2]]), np.array([np.pi / 2]))
 
 p = mpc.Process(target=serial_reader, args=('/dev/ttyUSB0', 9600, robot_spec, last_reading, sensor_reading))
 p.start()
@@ -93,7 +96,7 @@ should_quit = False
 t = 0
 UPDATE_EVERY = 10
 update_clock = pygame.time.Clock()
-com_pos, com_h, com_uncertainty = np.array([0, 0]), 0, np.array([1, 1, 360])
+com_pos, com_h, com_uncertainty = np.array([0, 0]), 0, np.array([1, 1])
 while not should_quit:
     t += 1
     # Limit fps.
@@ -123,7 +126,6 @@ while not should_quit:
         if event.type == pygame.MOUSEBUTTONUP:
             mouse_clicked = True
 
-    # TODO(wheung): IMPLEMENT ROBOT BEHAVIOUR
     time_stamp, robot_sensor_readings = robot.get_sensor_outputs()
     # while robot_sensor_readings.range < 0.05:
     #     turning_angle = random.random() * np.pi * 2
@@ -142,7 +144,7 @@ while not should_quit:
     # Update center of mass - best estimate
     com_pos = np.mean(particle_pos, axis=1)
     com_h = np.mean(particle_h)
-    com_uncertainty = np.std(np.concatenate([particle_pos, np.expand_dims(particle_h, 0)], axis=0), axis=0)
+    com_uncertainty = np.std(particle_pos, axis=0)
 
     if not (t % UPDATE_EVERY == 0):
         continue
