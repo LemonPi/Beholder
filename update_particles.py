@@ -1,10 +1,8 @@
 import numpy as np
-import pickle
 import pygame
-import random
 
 from constants import Units
-from data_structure import Particle, World, SimulatedRobot, RobotSpec, DistanceSensor, FloorSensor, ParticleFilter
+from data_structure import Particle, World, SimulatedRobot, RobotSpec, DistanceSensor, ParticleFilter
 from display import SimulatorWindow
 
 # ---- PARTICLE FILTER PARAMS
@@ -23,8 +21,8 @@ sensors = [
     ('range', DistanceSensor(np.array([[0], [0.01]]), 0, sigma=0.1)),
     ('right', DistanceSensor(np.array([[0.01], [0]]), np.pi / 2, sigma=0.1)),
     ('left', DistanceSensor(np.array([[-0.01], [0]]), -np.pi / 2, sigma=0.1)),
-    #('floor', FloorSensor(np.array([[0], [0]])))
-    ]
+    # ('floor', FloorSensor(np.array([[0], [0]])))
+]
 robot_spec = RobotSpec(sensors)
 # ------------------------------------------------------------
 
@@ -50,7 +48,7 @@ should_quit = False
 t = 0
 UPDATE_EVERY = 5
 update_clock = pygame.time.Clock()
-com_pos, com_h, com_uncertainty = np.array([0, 0]), 0, np.array([1, 1, 360])
+com_pos, com_h, com_uncertainty, is_converged = np.array([0, 0]), 0, np.array([1, 1]), False
 while not should_quit:
     t += 1
     # Limit fps.
@@ -65,7 +63,7 @@ while not should_quit:
     for i in range(N_PARTICLES):
         Particle.draw(window, pf.particle_pos[:, i], pf.particle_h[i])
     # Draw the center of mass position and heading
-    Particle.draw_com(window, com_pos, com_h, com_uncertainty)
+    Particle.draw_com(window, com_pos, com_h, com_uncertainty, is_converged)
 
     robot.draw(window)
 
@@ -90,7 +88,7 @@ while not should_quit:
         robot.move(0, turning_angle + np.random.normal(scale=0.05))
         pf.move_particles(0, turning_angle)
         robot_sensor_readings = robot.get_sensor_outputs()
-    
+
     # Move forward
     dist = ROBOT_SPEED * td / 1000
     robot.move(dist, 0)
@@ -100,7 +98,7 @@ while not should_quit:
     pf.update_particle_weights(robot.robot_spec, robot.get_sensor_outputs(), world)
 
     # Update center of mass - best estimate
-    (com_pos, com_h, com_uncertainty) = pf.get_pose_estimate()
+    (com_pos, com_h, com_uncertainty, is_converged) = pf.get_pose_estimate(convergence_radius=0.2)
 
     if not (t % UPDATE_EVERY == 0):
         continue

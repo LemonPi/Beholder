@@ -13,7 +13,7 @@ class ParticleFilter(object):
         start_x = np.random.randint(8, size=(self.N_PARTICLES,)) + 0.5
         start_y = np.random.randint(4, size=(self.N_PARTICLES,)) + 0.5
         starting_positions = np.stack((start_x, start_y), axis=0) * Units.METERS_IN_A_FOOT +  np.random.standard_normal((2, self.N_PARTICLES)) * self.POS_SIGMA
-        
+
         # Initial guess for particle positions
         self.particle_pos = starting_positions
 
@@ -44,9 +44,10 @@ class ParticleFilter(object):
     def move_particles(self, d, dh):
         self.particle_pos, self.particle_h = Particle.move(self.particle_pos, self.particle_h, d, dh)
 
-    def get_pose_estimate(self):
+    def get_pose_estimate(self, convergence_radius=float('inf')):
         com_pos = np.mean(self.particle_pos, axis=1)
         com_h = np.mean(self.particle_h)
-        com_uncertainty = np.std(np.concatenate([self.particle_pos, np.expand_dims(self.particle_h, 0)], axis=0), axis=0)
-        
-        return (com_pos, com_h, com_uncertainty)
+        com_uncertainty = np.std(self.particle_pos, axis=1)
+        is_converged = np.all(2 * com_uncertainty < convergence_radius)
+
+        return (com_pos, com_h, com_uncertainty, is_converged)

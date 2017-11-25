@@ -29,6 +29,8 @@ sensors = [
     #('floor', FloorSensor(np.array([[0], [0]])))
     ]
 robot_spec = RobotSpec(sensors)
+
+
 # ------------------------------------------------------------
 
 # ---- SERIAL CODE

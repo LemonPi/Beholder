@@ -63,12 +63,19 @@ class Particle(object):
         draw_triangle(window.screen, x_px, y_px, h, r=5, c=colour)
 
     @classmethod
-    def draw_com(cls, window, com_pos, com_h, com_uncertainty):
+    def draw_com(cls, window, com_pos, com_h, com_uncertainty, is_converged=False):
+        """
+        :param window: PyGame window. The window to draw onto.
+        :param com_pos: 2x1 NumPy array. The position of the pose estimate in meters.
+        :param com_h: The heading of the pose estimate.
+        :param com_uncertainty: 2x1 NumPy array. The uncertainty in x and y of the pose estimate in meters.
+        :param required_certainty: Boolean. Controls the colour of the uncertainty circle.
+        """
         circle_pos = window.m_to_px(com_pos)
-        circle_radius = window.m_to_px(np.mean(1 / com_uncertainty))
+        circle_radius = window.m_to_px(2 * np.mean(com_uncertainty))
 
-        # TODO(wheung): At some point, figure out if this takes any signficant amount of time.
         s = pygame.Surface((circle_radius * 2, circle_radius * 2), flags=pygame.SRCALPHA)
-        pygame.draw.circle(s, Colours.COM_UNCERTAINTY, [circle_radius, circle_radius], circle_radius)
+        pygame.draw.ellipse(s, Colours.COM_UNCERTAINTY_CONVERGED if is_converged else Colours.COM_UNCERTAINTY_UNCERTAIN,
+                            [0, 0, circle_radius * 2, circle_radius * 2])
         window.screen.blit(s, (circle_pos - circle_radius, circle_pos - circle_radius))
         Particle.draw(window, com_pos, com_h, colour=Colours.COM_COLOUR)
