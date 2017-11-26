@@ -111,6 +111,12 @@ class Robot {
      */
     void processNextTarget();
 
+    /**
+     * @brief Semantically process a packet from the PC.
+     * Packet can give a wide variety of commands.
+     */
+    void processPCPacket(const PCPacketData& pcPacket);
+
     // general bookkeeping
     bool _on;
     unsigned long _lastRunTime;

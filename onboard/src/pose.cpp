@@ -1,6 +1,13 @@
 #include <Arduino.h>
 
 #include "pose.h"
+#include "network.h"
+
+void Pose::deserializeObj(const uint8_t* const buffer, uint8_t& index) {
+    deserialize(buffer, index, x);
+    deserialize(buffer, index, y);
+    deserialize(buffer, index, heading);
+}
 
 coord_t distance(const Pose& a, const Pose& b) {
     const auto dx = b.x - a.x;

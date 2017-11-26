@@ -8,7 +8,13 @@ size_t Network::_pcPacketIndex = 0;
 Network::RxState Network::_rxState = Network::RxState::WAIT_FOR_START;
 
 uint8_t Network::_robotPacketBuf[Network::R::PACKET_SIZE];
-Network::PC::Packet Network::_pcPacket;
+uint8_t Network::_pcPacketBuf[Network::PC::PACKET_SIZE];
+
+void PCPacketData::deserializeObj(const uint8_t* const buffer, uint8_t& index) {
+    pose.deserializeObj(buffer, index);
+    deserialize(buffer, index, sequenceNum);
+    deserialize(buffer, index, intent);
+}
 
 void Network::begin(uint32_t baudRate) {
     _blueTooth.begin(baudRate);
@@ -38,6 +44,13 @@ bool Network::sendRobotPacket(const PoseUpdate& poseUpdate,
     _blueTooth.write(R::PACKET_START_BYTE);
     const auto sentBytes =
         _blueTooth.write(_robotPacketBuf, serializationIndex);
+
+    // CRC error checking
+    auto crc = _robotPacketBuf[0];
+    for (auto i = 1; i < serializationIndex; ++i) {
+        crc ^= _robotPacketBuf[i];
+    }
+    _blueTooth.write(crc);
 
     if (sentBytes != serializationIndex) {
         ERROR(4);
@@ -69,15 +82,24 @@ bool Network::recvPcPacket() {
             // should've gotten all content, so check end byte
             // TODO consider making this end byte the CRC (xor all bytes)
             if (_pcPacketIndex == PC::PACKET_SIZE) {
-                if (c == PC::PACKET_END_BYTE) {
+                // xor all bytes to get CRC for packet and compare against
+                // incoming CRC
+                auto crc = _pcPacketBuf[0];
+                for (auto i = 1; i < _pcPacketIndex; ++i) {
+                    crc ^= _pcPacketBuf[i];
+                }
+
+                if (c == crc) {
                     _rxState = RxState::HAVE_VALID_PACKET;
                 } else {
+                    // something went wrong and we got back CRC
+                    // just ignore packet
+                    ERROR(7);
                     resetPcPacket();
                 }
             } else {
                 // otherwise just add to buffer
-                _pcPacket.byteData[_pcPacketIndex++] = c;
-                _pcPacketIndex++;
+                _pcPacketBuf[_pcPacketIndex++] = c;
             }
             break;
         default:
@@ -89,7 +111,10 @@ bool Network::recvPcPacket() {
 }
 
 PCPacketData Network::getLatestPCPacket() {
-    return _pcPacket.packetData;
+    PCPacketData pcPacket;
+    uint8_t deserializationIndex = 0;
+    pcPacket.deserializeObj(_pcPacketBuf, deserializationIndex);
+    return pcPacket;
 }
 
 void Network::resetPcPacket() {

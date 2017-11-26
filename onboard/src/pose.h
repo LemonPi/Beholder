@@ -6,6 +6,10 @@
 struct Pose {
     coord_t x, y;
     heading_t heading;
+
+    static constexpr auto SERIALIZED_SIZE =
+        sizeof(coord_t) * 2 + sizeof(heading_t);
+    void deserializeObj(const uint8_t* const buffer, uint8_t& index);
 };
 
 /**

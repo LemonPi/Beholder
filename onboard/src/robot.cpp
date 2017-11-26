@@ -87,17 +87,20 @@ void Robot::processOdometry() {
 }
 
 bool Robot::run() {
-    if (_on == false) {
-        return false;
-    }
-
     // network reception is run as fast as possible
+    // we receive packets even when we're not "running" because we could be told
+    // to turn on
     if (Network::recvPcPacket()) {
         const auto pcUpdate = Network::getLatestPCPacket();
+        processPCPacket(pcUpdate);
         // TODO handle PC update (note always updates before applying this
         // cycle's pose update)
 
         Network::resetPcPacket();
+    }
+
+    if (_on == false) {
+        return false;
     }
 
     const auto now = millis();
@@ -192,4 +195,7 @@ void Robot::processNextTarget() {
     }
 
     // TODO gameplay logic
+}
+
+void Robot::processPCPacket(const PCPacketData& pcPacket) {
 }

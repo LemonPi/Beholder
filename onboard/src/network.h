@@ -14,11 +14,23 @@ struct PCPacketData {
     Pose pose;
     sequence_num_t sequenceNum;
     pc_packet_intent_t intent;
+
+    static constexpr auto SERIALIZED_SIZE = Pose::SERIALIZED_SIZE +
+                                            sizeof(sequence_num_t) +
+                                            sizeof(pc_packet_intent_t);
+
+    void deserializeObj(const uint8_t* const buffer, uint8_t& index);
 };
 
 template <typename T>
 void serialize(uint8_t* buffer, uint8_t& index, T value) {
     memcpy(buffer + index, &value, sizeof(T));
+    index += sizeof(T);
+}
+
+template <typename T>
+void deserialize(const uint8_t* const buffer, uint8_t& index, T& value) {
+    memcpy(&value, buffer + index, sizeof(T));
     index += sizeof(T);
 }
 
@@ -35,14 +47,8 @@ class Network {
     };
 
     struct PC {
-        static constexpr auto PACKET_SIZE = sizeof(PCPacketData);
+        static constexpr auto PACKET_SIZE = PCPacketData::SERIALIZED_SIZE;
         static constexpr char PACKET_START_BYTE = 0xF5;
-        static constexpr char PACKET_END_BYTE = 0x53;
-
-        union Packet {
-            PCPacketData packetData;
-            byte byteData[PACKET_SIZE];
-        };
     };
 
     enum RxState { WAIT_FOR_START, READING, HAVE_VALID_PACKET };
@@ -78,7 +84,7 @@ class Network {
     static uint8_t _robotPacketBuf[R::PACKET_SIZE];
 
     // pc sending
-    static PC::Packet _pcPacket;
+    static uint8_t _pcPacketBuf[PC::PACKET_SIZE];
     static size_t _pcPacketIndex;
     static RxState _rxState;
 
