@@ -99,6 +99,7 @@ class Robot {
      * Should be called at the start of this cycle *before* any motor commands.
      */
     void processOdometry();
+    void applyOdometryUpdate(const PoseUpdate& poseUpdate);
     /**
      * @brief Convert behaviour control's input to motor control and actuate
      * motors

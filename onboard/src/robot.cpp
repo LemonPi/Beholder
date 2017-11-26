@@ -60,15 +60,11 @@ void Robot::processOdometry() {
 
     // interpolate the heading between cycles
     const auto lastHeading = _pose.heading;
-    _pose.heading += atan2(displacementLastL - displacementLastR, BASE_LENGTH);
-    poseUpdate.headingDiff = wrapHeading(_pose.heading - lastHeading);
+    const auto newHeading =
+        lastHeading + atan2(displacementLastL - displacementLastR, BASE_LENGTH);
+    poseUpdate.headingDiff = wrapHeading(newHeading - lastHeading);
 
-    _pose.x += poseUpdate.displacement *
-               cos(lastHeading + poseUpdate.headingDiff * 0.5);
-    _pose.y += poseUpdate.displacement *
-               sin(lastHeading + poseUpdate.headingDiff * 0.5);
-
-    _pose.heading = wrapHeading(_pose.heading);
+    applyOdometryUpdate(poseUpdate);
 
     // push to front so _lastPoseUpdates[0] == poseUpdate
     _lastPoseUpdates.unshift(poseUpdate);
@@ -84,6 +80,15 @@ void Robot::processOdometry() {
     //    PRINT(_pose.y);
     //    PRINT(" h ");
     //    PRINTLN(_pose.heading);
+}
+
+void Robot::applyOdometryUpdate(const PoseUpdate& poseUpdate) {
+    _pose.x += poseUpdate.displacement *
+               cos(_pose.heading + poseUpdate.headingDiff * 0.5);
+    _pose.y += poseUpdate.displacement *
+               sin(_pose.heading + poseUpdate.headingDiff * 0.5);
+
+    _pose.heading = wrapHeading(_pose.heading + poseUpdate.headingDiff);
 }
 
 bool Robot::run() {
@@ -173,11 +178,11 @@ void Robot::controlMotors(const BehaviourControl& control) {
     }
 
     // debugging
-    PRINT(_activeBehaviourId);
-    PRINT(" L: ");
-    PRINT(_leftMc.getVelocity());
-    PRINT(" R: ");
-    PRINTLN(_rightMc.getVelocity());
+    //    PRINT(_activeBehaviourId);
+    //    PRINT(" L: ");
+    //    PRINT(_leftMc.getVelocity());
+    //    PRINT(" R: ");
+    //    PRINTLN(_rightMc.getVelocity());
 }
 
 void Robot::processNextTarget() {
@@ -198,4 +203,53 @@ void Robot::processNextTarget() {
 }
 
 void Robot::processPCPacket(const PCPacketData& pcPacket) {
+    switch (pcPacket.intent) {
+    case PCPacketIntent::TURN_ON:
+        _on = true;
+        PRINTLN("turn on");
+        break;
+    case PCPacketIntent::TURN_OFF:
+        _on = false;
+        PRINTLN("turn off");
+        break;
+    case PCPacketIntent::POSE_UPDATE:
+        // replace our own pose with the updated one
+        _pose = pcPacket.pose;
+        // apply historical odometry updates on top of this pose
+        // this is always run before the next logic cycle's odometry occurs
+        // so if our current SN is 6 and the packet SN is 2
+        // so PC's pose has information up to logic cycle 2
+        // need to apply odometry updates from SN 3,4,5,6
+        // correlates to _lastPoseUpdates[3], [2], [1], [0]
+        // so current SN - packet SN - 1 to 0
+        for (int sn = Network::getSequenceNum() - pcPacket.sequenceNum - 1;
+             sn >= 0; --sn) {
+            applyOdometryUpdate(_lastPoseUpdates[sn]);
+        }
+        break;
+    case PCPacketIntent::POSE_PING:
+        // don't do anything
+        break;
+    default:
+        // some other command
+        if (pcPacket.intent < PCPacketIntent::GROUP_OFFSET) {
+            // add target
+            Target target;
+            target.type = static_cast<Target::Type>(pcPacket.intent);
+            target.x = pcPacket.pose.x;
+            target.y = pcPacket.pose.y;
+            target.heading = pcPacket.pose.heading;
+        } else if (pcPacket.intent < 2 * PCPacketIntent::GROUP_OFFSET) {
+            // enable this behaviour
+            const auto behaviourId =
+                pcPacket.intent - 2 * PCPacketIntent::GROUP_OFFSET;
+            _allowedBehaviours[behaviourId] = true;
+        } else if (pcPacket.intent < 3 * PCPacketIntent::GROUP_OFFSET) {
+            // disable this behaviour
+            const auto behaviourId =
+                pcPacket.intent - 3 * PCPacketIntent::GROUP_OFFSET;
+            _allowedBehaviours[behaviourId] = false;
+        }
+        break;
+    }
 }

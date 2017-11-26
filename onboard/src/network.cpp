@@ -85,7 +85,7 @@ bool Network::recvPcPacket() {
                 // xor all bytes to get CRC for packet and compare against
                 // incoming CRC
                 auto crc = _pcPacketBuf[0];
-                for (auto i = 1; i < _pcPacketIndex; ++i) {
+                for (auto i = 1U; i < _pcPacketIndex; ++i) {
                     crc ^= _pcPacketBuf[i];
                 }
 
@@ -120,4 +120,7 @@ PCPacketData Network::getLatestPCPacket() {
 void Network::resetPcPacket() {
     _rxState = RxState::WAIT_FOR_START;
     _pcPacketIndex = 0;
+}
+sequence_num_t Network::getSequenceNum() {
+    return _sequenceNum;
 }

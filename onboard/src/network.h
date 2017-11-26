@@ -9,7 +9,22 @@
  * Value associated with each PC packet to indicate intent
  * of the contained pose (waypoint or pose update)
  */
-using pc_packet_intent_t = uint32_t;
+using pc_packet_intent_t = uint8_t;
+
+/**
+ * 0 - 29 means associated pose is a new waypoint with corresponding type
+ * 30 - 59 means enable behaviour with this ID
+ * 60 - 90 means disable behaviour with this ID
+ * special intent values 250+
+ */
+namespace PCPacketIntent {
+constexpr pc_packet_intent_t GROUP_OFFSET = 30;
+constexpr pc_packet_intent_t TURN_ON = 250;
+constexpr pc_packet_intent_t TURN_OFF = 251;
+constexpr pc_packet_intent_t POSE_UPDATE = 252;
+constexpr pc_packet_intent_t POSE_PING = 253;
+}
+
 struct PCPacketData {
     Pose pose;
     sequence_num_t sequenceNum;
@@ -77,6 +92,8 @@ class Network {
      * Safe to call after call to getLatestPCPacket
      */
     static void resetPcPacket();
+
+    static sequence_num_t getSequenceNum();
 
   private:
     // robot sending
