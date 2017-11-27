@@ -16,6 +16,8 @@ constexpr auto CAN_TURN_IN_PLACE = 0.5;
 // max turn occurs at 90 degrees (pi/2); this is the linearly scaling PWM for
 // changing our heading
 constexpr auto TURN_PER_RAD_PWM = 100 / (PI * 0.5) * Robot::SPEED_SCALE;
+constexpr auto TURN_IN_PLACE_PER_RAD_PWM =
+    180 / (PI * 0.5) * Robot::SPEED_SCALE;
 
 // distance from target that we always drive at max speed beyond [mm]
 constexpr auto MAX_SPEED_BEYOND = 200;
@@ -91,12 +93,27 @@ void Robot::computeNavigate() {
 
 void Robot::computeTurnInPlace() {
     auto& ctrl = _behaviours[BehaviourId::NAVIGATE];
-    // only active if we have a target to get to and our heading difference is
-    // large enough
-    if (_curTargetId == NO_TARGET) {
+
+    // not a behaviour that activates itself
+    if (ctrl.active == false || _curTargetId == NO_TARGET) {
         ctrl.active = false;
         return;
-    } else {
-        ctrl.active = true;
     }
+
+    // only active if we have a target to get to and our heading difference is
+    // large enough
+
+    // turn in place with no translational velocity
+    ctrl.speed = 0;
+
+    const auto toTurn = headingDifference(_pose, _targets[_curTargetId]);
+
+    // finished with this target
+    if (abs(toTurn) < HEADING_THRESHOLD) {
+        processNextTarget(BehaviourId::TURN_IN_PLACE);
+        return;
+    }
+
+    // turn proportional to how much we need to turn
+    ctrl.heading = toTurn * TURN_IN_PLACE_PER_RAD_PWM;
 }

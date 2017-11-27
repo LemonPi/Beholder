@@ -134,6 +134,9 @@ bool Robot::run() {
         if (_allowedBehaviours[BehaviourId::NAVIGATE]) {
             computeNavigate();
         }
+        if (_allowedBehaviours[BehaviourId::TURN_IN_PLACE]) {
+            computeTurnInPlace();
+        }
     }
 
     const auto lastActive = _activeBehaviourId;
