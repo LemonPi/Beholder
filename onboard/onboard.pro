@@ -9,7 +9,10 @@ SOURCES += \
     src/sonars.cpp \
     src/behaviours/wall_turn.cpp \
     src/pose.cpp \
-    src/network.cpp
+    src/network.cpp \
+    src/behaviours/navigate.cpp \
+    src/target.cpp \
+    src/behaviours/cube.cpp
 
 HEADERS += \
     onboard.ino \

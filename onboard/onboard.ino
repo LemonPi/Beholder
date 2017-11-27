@@ -39,7 +39,7 @@ Robot robot(leftMc, rightMc, Pose{0, 0, 0});
 void setup() {
     Serial.begin(9600);
 
-    // Sonars::setupPingTimers();
+    Sonars::setupPingTimers();
     WheelEncoders::setUp(LEFT_INTERRUPT_PIN, RIGHT_INTERRUPT_PIN);
     Network::begin(9600);
 
@@ -55,8 +55,8 @@ void loop() {
     //    leftMc.go();
     //    rightMc.go();
 
-    robot.setBehaviour(Robot::BehaviourId::WALL_FOLLOW, true);
-    robot.setBehaviour(Robot::BehaviourId::TURN_IN_FRONT_OF_WALL, true);
+    robot.setBehaviour(Robot::BehaviourId::WALL_FOLLOW, false);
+    robot.setBehaviour(Robot::BehaviourId::TURN_IN_FRONT_OF_WALL, false);
 
     robot.run();
 

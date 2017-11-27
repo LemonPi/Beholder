@@ -14,6 +14,8 @@ struct Target : public Pose {
     enum Type {
         // just get there
         NAVIGATE = 0,
+        // turn in place here
+        TURN_IN_PLACE,
         // find and pickup cube in region
         GET_CUBE,
         // put cube down
@@ -22,6 +24,9 @@ struct Target : public Pose {
     };
 
     Type type;
+
+    static constexpr heading_t ANY_HEADING = 1000;
+    bool hasTargetHeading() const;
 };
 
 #endif // TARGET_H

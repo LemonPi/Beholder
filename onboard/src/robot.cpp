@@ -9,6 +9,7 @@ Robot::Robot(MotorController leftMc, MotorController rightMc, Pose initialPose)
     : _on(false), _lastRunTime(0U), _pose(initialPose), _leftMc(leftMc),
       _rightMc(rightMc), _curTargetId(NO_TARGET) {
 
+    // by default all behaviours are allowed
     for (int b = 0; b < BehaviourId::NUM_BEHAVIOURS; ++b) {
         _allowedBehaviours[b] = true;
     }
@@ -60,15 +61,11 @@ void Robot::processOdometry() {
 
     // interpolate the heading between cycles
     const auto lastHeading = _pose.heading;
-    _pose.heading += atan2(displacementLastL - displacementLastR, BASE_LENGTH);
-    poseUpdate.headingDiff = wrapHeading(_pose.heading - lastHeading);
+    const auto newHeading =
+        lastHeading + atan2(displacementLastL - displacementLastR, BASE_LENGTH);
+    poseUpdate.headingDiff = wrapHeading(newHeading - lastHeading);
 
-    _pose.x += poseUpdate.displacement *
-               cos(lastHeading + poseUpdate.headingDiff * 0.5);
-    _pose.y += poseUpdate.displacement *
-               sin(lastHeading + poseUpdate.headingDiff * 0.5);
-
-    _pose.heading = wrapHeading(_pose.heading);
+    applyOdometryUpdate(poseUpdate);
 
     // push to front so _lastPoseUpdates[0] == poseUpdate
     _lastPoseUpdates.unshift(poseUpdate);
@@ -86,18 +83,27 @@ void Robot::processOdometry() {
     //    PRINTLN(_pose.heading);
 }
 
-bool Robot::run() {
-    if (_on == false) {
-        return false;
-    }
+void Robot::applyOdometryUpdate(const PoseUpdate& poseUpdate) {
+    _pose.x += poseUpdate.displacement *
+               cos(_pose.heading + poseUpdate.headingDiff * 0.5);
+    _pose.y += poseUpdate.displacement *
+               sin(_pose.heading + poseUpdate.headingDiff * 0.5);
 
+    _pose.heading = wrapHeading(_pose.heading + poseUpdate.headingDiff);
+}
+
+bool Robot::run() {
     // network reception is run as fast as possible
+    // we receive packets even when we're not "running" because we could be told
+    // to turn on
     if (Network::recvPcPacket()) {
         const auto pcUpdate = Network::getLatestPCPacket();
-        // TODO handle PC update (note always updates before applying this
-        // cycle's pose update)
-
+        processPCPacket(pcUpdate);
         Network::resetPcPacket();
+    }
+
+    if (_on == false) {
+        return false;
     }
 
     const auto now = millis();
@@ -110,14 +116,31 @@ bool Robot::run() {
     // we get per cycle
     processOdometry();
 
-    // TODO loop through behaviour layers and see which ones want to take over
-    // control
-    if (_allowedBehaviours[BehaviourId::WALL_FOLLOW]) {
-        _wallFollow.compute(_behaviours[BehaviourId::WALL_FOLLOW]);
-    }
-    if (_allowedBehaviours[BehaviourId::TURN_IN_FRONT_OF_WALL]) {
-        _wallTurn.compute(_behaviours[BehaviourId::TURN_IN_FRONT_OF_WALL],
-                          _pose);
+    _processBehaviours = true;
+
+    while (_processBehaviours) {
+        _processBehaviours = false;
+        // TODO loop through behaviour layers and see which ones want to take
+        // over control
+        if (_allowedBehaviours[BehaviourId::WALL_FOLLOW]) {
+            _wallFollow.compute(_behaviours[BehaviourId::WALL_FOLLOW]);
+        }
+        if (_allowedBehaviours[BehaviourId::TURN_IN_FRONT_OF_WALL]) {
+            _wallTurn.compute(_behaviours[BehaviourId::TURN_IN_FRONT_OF_WALL],
+                              _pose);
+        }
+        if (_allowedBehaviours[BehaviourId::NAVIGATE]) {
+            computeNavigate();
+        }
+        if (_allowedBehaviours[BehaviourId::TURN_IN_PLACE]) {
+            computeTurnInPlace();
+        }
+        if (_allowedBehaviours[BehaviourId::GET_CUBE]) {
+            computeGetCube();
+        }
+        if (_allowedBehaviours[BehaviourId::PUT_CUBE]) {
+            computePutCube();
+        }
     }
 
     const auto lastActive = _activeBehaviourId;
@@ -170,26 +193,89 @@ void Robot::controlMotors(const BehaviourControl& control) {
     }
 
     // debugging
-    PRINT(_activeBehaviourId);
-    PRINT(" L: ");
-    PRINT(_leftMc.getVelocity());
-    PRINT(" R: ");
-    PRINTLN(_rightMc.getVelocity());
+    //    PRINT(_activeBehaviourId);
+    //    PRINT(" L: ");
+    //    PRINT(_leftMc.getVelocity());
+    //    PRINT(" R: ");
+    //    PRINTLN(_rightMc.getVelocity());
 }
 
-void Robot::processNextTarget() {
+void Robot::processNextTarget(BehaviourId behaviourCompleted) {
+    PRINT("Completed ");
+    PRINTLN(behaviourCompleted);
     // should never call this function when out of targets
     if (_curTargetId < 0) {
-        // TODO add debug serial printing
         return;
     }
 
-    --_curTargetId;
+    const auto completedTarget = _targets[_curTargetId];
 
-    // if we're out of targets we can disable navigation
-    if (_curTargetId == NO_TARGET) {
-        _behaviours[BehaviourId::NAVIGATE].active = false;
+    // always stop turning (will get activated immediately after if necessary)
+    _behaviours[BehaviourId::TURN_IN_PLACE].active = false;
+
+    if (--_curTargetId >= 0) {
+        _processBehaviours = true;
     }
 
-    // TODO gameplay logic
+    // reached the place where we need to find and get the cube
+    // enable that behaviour
+    if (completedTarget.type == Target::Type::GET_CUBE) {
+        _behaviours[BehaviourId::GET_CUBE].active = true;
+    } else if (completedTarget.type == Target::Type::PUT_CUBE) {
+        _behaviours[BehaviourId::PUT_CUBE].active = true;
+    }
+}
+
+void Robot::processPCPacket(const PCPacketData& pcPacket) {
+    switch (pcPacket.intent) {
+    case PCPacketIntent::TURN_ON:
+        PRINTLN("turn on");
+        _on = true;
+        break;
+    case PCPacketIntent::TURN_OFF:
+        PRINTLN("turn off");
+        _on = false;
+        break;
+    case PCPacketIntent::POSE_UPDATE:
+        PRINTLN("pose update");
+        // replace our own pose with the updated one
+        _pose = pcPacket.pose;
+        // apply historical odometry updates on top of this pose
+        // this is always run before the next logic cycle's odometry occurs
+        // so if our current SN is 6 and the packet SN is 2
+        // so PC's pose has information up to logic cycle 2
+        // need to apply odometry updates from SN 3,4,5,6
+        // correlates to _lastPoseUpdates[3], [2], [1], [0]
+        // so current SN - packet SN - 1 to 0
+        for (int sn = Network::getSequenceNum() - pcPacket.sequenceNum - 1;
+             sn >= 0; --sn) {
+            applyOdometryUpdate(_lastPoseUpdates[sn]);
+        }
+        break;
+    case PCPacketIntent::POSE_PING:
+        PRINTLN("pose ping");
+        // don't do anything
+        break;
+    default:
+        // some other command
+        if (pcPacket.intent < PCPacketIntent::GROUP_OFFSET) {
+            // add target
+            Target target;
+            target.type = static_cast<Target::Type>(pcPacket.intent);
+            target.x = pcPacket.pose.x;
+            target.y = pcPacket.pose.y;
+            target.heading = pcPacket.pose.heading;
+        } else if (pcPacket.intent < 2 * PCPacketIntent::GROUP_OFFSET) {
+            // enable this behaviour
+            const auto behaviourId =
+                pcPacket.intent - 2 * PCPacketIntent::GROUP_OFFSET;
+            _allowedBehaviours[behaviourId] = true;
+        } else if (pcPacket.intent < 3 * PCPacketIntent::GROUP_OFFSET) {
+            // disable this behaviour
+            const auto behaviourId =
+                pcPacket.intent - 3 * PCPacketIntent::GROUP_OFFSET;
+            _allowedBehaviours[behaviourId] = false;
+        }
+        break;
+    }
 }

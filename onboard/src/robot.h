@@ -31,6 +31,8 @@ class Robot {
     // communication
     static constexpr auto MAX_NUM_POSE_UPDATES = 10;
 
+    enum GetCubeState { SEARCH, DRIVE_FWD, CLOSING, RAISING, NUM_STATES };
+
   public:
     /**
      * @brief Minimum time [ms] between the start of
@@ -48,10 +50,12 @@ class Robot {
     // behaviour layers ordered in increasing priority
     enum BehaviourId {
         WAIT = 0,
-        NAVIGATE,
         WALL_FOLLOW,
+        NAVIGATE,
         TURN_IN_FRONT_OF_WALL,
         TURN_IN_PLACE,
+        GET_CUBE,
+        PUT_CUBE,
         AVOID_BOUNDARY,
         NUM_BEHAVIOURS
     };
@@ -92,6 +96,8 @@ class Robot {
     // layers so we can't abstract the computation into their classes
     void computeNavigate();
     void computeTurnInPlace();
+    void computeGetCube();
+    void computePutCube();
     void computeAvoidBoundary();
 
     /**
@@ -99,6 +105,7 @@ class Robot {
      * Should be called at the start of this cycle *before* any motor commands.
      */
     void processOdometry();
+    void applyOdometryUpdate(const PoseUpdate& poseUpdate);
     /**
      * @brief Convert behaviour control's input to motor control and actuate
      * motors
@@ -108,8 +115,15 @@ class Robot {
     /**
      * @brief Process next target to reach, activating and deactivating
      * behaviours as necessary. Call after reaching current target.
+     * @param behaviourCompleted The behaviour that completed the current target
      */
-    void processNextTarget();
+    void processNextTarget(BehaviourId behaviourCompleted);
+
+    /**
+     * @brief Semantically process a packet from the PC.
+     * Packet can give a wide variety of commands.
+     */
+    void processPCPacket(const PCPacketData& pcPacket);
 
     // general bookkeeping
     bool _on;
@@ -126,6 +140,13 @@ class Robot {
     BehaviourControl _behaviours[BehaviourId::NUM_BEHAVIOURS];
     bool _allowedBehaviours[BehaviourId::NUM_BEHAVIOURS];
     BehaviourId _activeBehaviourId;
+    bool _processBehaviours;
+
+    // navigation
+    coord_t _lastDistToTarget;
+
+    // cube
+    GetCubeState _getCubeState;
 
     // behaviour state
     WallTurn _wallTurn;
