@@ -91,7 +91,7 @@ PC_PACKET_START_BYTE = b'\xf5'
 
 # ---- BLUETOOTH CODE
 # ------------------------------------------------------------
-def bluetooth_reader(spec, shm_positions, shm_headings, shm_readings):
+def bluetooth_reader(spec, shm_positions, shm_headings, shm_readings, flag):
     sensor_packetizer = Packetizer("IffIIIB")
     pose_packetizer = Packetizer("fffIB")
 
@@ -117,9 +117,10 @@ def bluetooth_reader(spec, shm_positions, shm_headings, shm_readings):
     # Create the client socket
     sock = bl.BluetoothSocket(bl.RFCOMM)
     sock.connect((host, port))
-    sock.settimeout(1)
+    sock.settimeout(0.5)
     try:
-        _ = sock.recv(10000)     # Get rid of all trash
+        while(True):
+            _ = sock.recv(10000)     # Get rid of all trash
     except bl.btcommon.BluetoothError as e:
         pass
 
@@ -143,12 +144,18 @@ def bluetooth_reader(spec, shm_positions, shm_headings, shm_readings):
     data = (0.0, 0.0, 0.0, 0, 250)      # Start packet
     packet = pose_packetizer.to_packet(data)
 
-    # # Send data to robot
+    # Send data to robot
     # for i in range(10):
-    # print("Sending start signal")
-    # sock.send(PC_PACKET_START_BYTE)
-    # sock.send(packet)
-    # time.sleep(1)
+    #     print("Sending start signal")
+    #     sock.send(PC_PACKET_START_BYTE)
+    #     sock.send(packet)
+    #     time.sleep(1)
+
+    print("Sending start signal")
+    sock.send(PC_PACKET_START_BYTE)
+    sock.send(packet)
+
+    # TODO: Bidirectional handshake
 
     # Initialize everything
     update_num = 1
@@ -158,13 +165,24 @@ def bluetooth_reader(spec, shm_positions, shm_headings, shm_readings):
     # ---- READ-UPDATE LOOP
     # ------------------------------------------------------------
     while(True):
+        # Handle Keyboard Input
+        if (flag.value == 1):
+            start_packet = pose_packetizer.to_packet((0.0, 0.0, 0.0, 0, 250))
+            sock.send(PC_PACKET_START_BYTE)
+            sock.send(start_packet)
+            flag.value = 0
+        if (flag.value == 2):
+            stop_packet = pose_packetizer.to_packet((0.0, 0.0, 0.0, 0, 251))
+            sock.send(PC_PACKET_START_BYTE)
+            sock.send(stop_packet)
+            flag.value = 0
 
         # ---- READ PACKETS
         # ------------------------------------------------------------
         # Listen for packets from the robot        
         while(True):
             char_in = sock.recv(1)
-            print(char_in, ord(char_in), char_in[0])
+            # print(char_in, ord(char_in), char_in[0])
             # Check the reset character
             # if (char_in == b'\xa2'):
             #     print('Resetting...')
@@ -196,19 +214,23 @@ def bluetooth_reader(spec, shm_positions, shm_headings, shm_readings):
         if (update_num % UPDATE_EVERY == 0):
             pf.resample()
 
+        update_time = time.time()
+        print(update_time - packet_time)
+
         # ---- UPDATE ROBOT
         # ------------------------------------------------------------
         # Get an estimate of the robot's position
         com_pos, com_h, com_uncertainty, is_converged = pf.get_pose_estimate(convergence_radius=0.4)
 
         # Create a packet to send back to the robot
-        intent = 252 if is_converged else 253
+        # intent = 252 if is_converged else 253
+        intent = 252
         data = (float(com_pos[0]), float(com_pos[1]), float(com_h), seq_num, intent)
         packet = pose_packetizer.to_packet(data)
         
         # Send data to robot
-        # sock.send(PC_PACKET_START_BYTE)
-        # sock.send(packet)
+        sock.send(PC_PACKET_START_BYTE)
+        sock.send(packet)
 
         # Update shared memory
         shm_positions[:] = list(pf.particle_pos.reshape(2*N_PARTICLES,))
@@ -224,9 +246,10 @@ def bluetooth_reader(spec, shm_positions, shm_headings, shm_readings):
 positions = mpc.Array('f', 2*N_PARTICLES)
 headings = mpc.Array('f', N_PARTICLES)
 readings = mpc.Array('f', len(robot_spec.sensors))
+flag = mpc.Value('I')
 
 #p = mpc.Process(target=serial_reader, args=(robot_spec, positions, headings))
-p = mpc.Process(target=bluetooth_reader, args=(robot_spec, positions, headings, readings))
+p = mpc.Process(target=bluetooth_reader, args=(robot_spec, positions, headings, readings, flag))
 p.start()
 # ------------------------------------------------------------
 
@@ -250,6 +273,15 @@ while not should_quit:
     t += 1
     # Limit fps.
     update_clock.tick(40)
+
+    # ---- KEYBOARD INPUT
+    keys = pygame.key.get_pressed()
+    if keys[pygame.K_o]:
+        print("Turning on")
+        flag.value = 1
+    if keys[pygame.K_p]:
+        print("Turning off")
+        flag.value = 2
 
     # Extract positions and headings
     particle_pos = np.array(positions[:]).reshape((2, N_PARTICLES))
