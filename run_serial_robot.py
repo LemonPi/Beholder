@@ -123,8 +123,7 @@ def bluetooth_reader(spec, shm_positions, shm_headings, shm_readings, flag):
             _ = sock.recv(10000)     # Get rid of all trash
     except bl.btcommon.BluetoothError as e:
         pass
-
-    sock.setblocking(True)
+    sock.settimeout(0.1)
 
     # ---- PARTICLE FILTER SETUP
     with open('range_finder_cache.pkl', 'rb') as f:
@@ -164,7 +163,7 @@ def bluetooth_reader(spec, shm_positions, shm_headings, shm_readings, flag):
     # ------------------------------------------------------------
     # ---- READ-UPDATE LOOP
     # ------------------------------------------------------------
-    while(True):
+    while (True):
         # Handle Keyboard Input
         if (flag.value == 1):
             start_packet = pose_packetizer.to_packet((0.0, 0.0, 0.0, 0, 250))
@@ -179,26 +178,28 @@ def bluetooth_reader(spec, shm_positions, shm_headings, shm_readings, flag):
 
         # ---- READ PACKETS
         # ------------------------------------------------------------
-        # Listen for packets from the robot        
-        while(True):
-            char_in = sock.recv(1)
-            # print(char_in, ord(char_in), char_in[0])
-            # Check the reset character
-            # if (char_in == b'\xa2'):
-            #     print('Resetting...')
-            #     # Reset the particle filter
-            #     update_num = 1
-            #     pf = ParticleFilter(N_PARTICLES, POS_SIGMA, H_SIGMA)
-            #     break
-            # Wait for start character
-            if (char_in == ROBOT_PACKET_START_BYTE):
-                break
-        
+        # Listen for packets from the robot
+        char_in = sock.recv(1)
+        # print(char_in, ord(char_in), char_in[0])
+        # Check the reset character
+        # if (char_in == b'\xa2'):
+        #     print('Resetting...')
+        #     # Reset the particle filter
+        #     update_num = 1
+        #     pf = ParticleFilter(N_PARTICLES, POS_SIGMA, H_SIGMA)
+        #     break
+        # Wait for start character
+        if (char_in != ROBOT_PACKET_START_BYTE):
+            continue
+
         # Read packet
         packet_time = time.time()
         buffer = b''
         for i in range(sensor_packetizer.NUM_BYTES):
-            b = sock.recv(1)
+            b = ''
+            while b == '':
+                # Wait for something to come through Bluetooth.
+                b = sock.recv(1)
             buffer += b
 
         # Parse Packet
