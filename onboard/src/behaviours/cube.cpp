@@ -25,25 +25,20 @@ float readIRRangefinder(const int& pin) {
 void Robot::computeGetCube() {
     auto& ctrl = _behaviours[BehaviourId::GET_CUBE];
     // externally activated, but turns self off
-    // if (ctrl.active == false) {
-    //     return;
-    // }
+    if (ctrl.active == false) {
+        return;
+    }
     // Distance estimate [mm] for the lower IR rangefinder.
     const auto& irDistanceLow = readIRRangefinder(IR_RANGEFINDER_LOW);
     // Distance estimate [mm] for the upper IR rangefinder.
     const auto& irDistanceHigh = readIRRangefinder(IR_RANGEFINDER_HIGH);
-    // // Distance estimate [mm] for the front ultrasonic.
-    // const auto& sonarDistance = Sonars::getReading(Sonars::FRONT);
     // Difference between the upper and lower IR rangefinder distances [mm].
-    const auto& irDisparity = abs(irDistanceLow - irDistanceHigh);
+    const auto& irDisparity = (irDistanceHigh - IR_RANGEFINDER_OFFSET) - irDistanceLow;
 
     PRINT("LOW=");
     PRINT(irDistanceLow);
     PRINT("HIGH=");
     PRINTLN(irDistanceHigh);
-
-    const auto& TURN_SPEED = SPEED_SCALE*0.25*MOTOR_PWM_MAX;
-    const auto& FORWARD_SPEED = SPEED_SCALE*0.5*MOTOR_PWM_MAX;
 
     switch(_getCubeState) {
         case START:
@@ -57,10 +52,12 @@ void Robot::computeGetCube() {
         case SEARCH_LEFT:
         PRINTLN("Search left...");
         // Turn to the left.
-        _leftMc.setVelocity(-TURN_SPEED);
-        _rightMc.setVelocity(TURN_SPEED);
+        _leftMc.setVelocity(-CUBE_PICKUP_TURN_SPEED);
+        _rightMc.setVelocity(CUBE_PICKUP_TURN_SPEED);
         // Give up on bad readings. Our sensor is only rated to 15 cm.
-        if (irDistanceLow > MAX_IR_RANGEFINDER_DISTANCE || irDistanceHigh > MAX_IR_RANGEFINDER_DISTANCE) {
+        if (irDistanceLow > MAX_IR_RANGEFINDER_DISTANCE
+            // || irDistanceHigh > MAX_IR_RANGEFINDER_DISTANCE
+            ) {
             break;
         }
         if (irDisparity > BLOCK_MIN_DISPARITY) {
@@ -80,10 +77,12 @@ void Robot::computeGetCube() {
         case SEARCH_RIGHT:
         PRINTLN("Search right...");
         // Turn to the right.
-        _leftMc.setVelocity(TURN_SPEED);
-        _rightMc.setVelocity(-TURN_SPEED);
+        _leftMc.setVelocity(CUBE_PICKUP_TURN_SPEED);
+        _rightMc.setVelocity(-CUBE_PICKUP_TURN_SPEED);
         // Give up on bad readings. Our sensor is only rated to 15 cm.
-        if (irDistanceLow > MAX_IR_RANGEFINDER_DISTANCE || irDistanceHigh > MAX_IR_RANGEFINDER_DISTANCE) {
+        if (irDistanceLow > MAX_IR_RANGEFINDER_DISTANCE
+            // || irDistanceHigh > MAX_IR_RANGEFINDER_DISTANCE
+            ) {
             break;
         }
         if (irDisparity > BLOCK_MIN_DISPARITY) {
@@ -102,10 +101,10 @@ void Robot::computeGetCube() {
         break;
         case DRIVE_FWD:
         PRINTLN("Driving forward!");
-        _leftMc.setVelocity(SPEED_SCALE*0.5*MOTOR_PWM_MAX);
-        _rightMc.setVelocity(SPEED_SCALE*0.5*MOTOR_PWM_MAX);
+        _leftMc.setVelocity(CUBE_PICKUP_FORWARD_SPEED);
+        _rightMc.setVelocity(CUBE_PICKUP_FORWARD_SPEED);
         // Lost block. Return to searching.
-        if (irDisparity < 1.2*BLOCK_MIN_DISPARITY) {
+        if (irDisparity < BLOCK_LOST_MULT * BLOCK_MIN_DISPARITY) {
             _getCubeState = START;
         }
         // Arrived at block. Pick it up.
@@ -116,7 +115,7 @@ void Robot::computeGetCube() {
         }
         break;
         case CLOSING:
-        // PRINTLN("Closing!");
+        PRINTLN("Closing!");
         // Close the claw.
         _clawPosition -= CLAW_SPEED;
         if (_clawPosition <= CLAW_CLOSED) {
@@ -124,10 +123,12 @@ void Robot::computeGetCube() {
         }
         break;
         case RAISING:
+        PRINTLN("Raising.");
         // Raise the arm.
         _armPosition += ARM_SPEED;
         if (_armPosition >= ARM_UP) {
-            // TODO: Cube GET
+            // Done.
+            ctrl.active = false;
         }
         break;
         default:
@@ -155,7 +156,7 @@ void Robot::computePutCube() {
         case OPENING:
         _clawPosition += CLAW_SPEED;
         if (_clawPosition >= CLAW_OPENED) {
-            // TODO: Cube done!
+            ctrl.active = false;
         }
         break;
         default:

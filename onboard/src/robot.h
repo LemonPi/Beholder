@@ -24,6 +24,12 @@ class Robot {
      */
     static constexpr double BASE_LENGTH = 143.8 + 8.8;
 
+    /**
+     * @brief Distance [mm] from upper IR rangefinder to lower rangefinder, along the
+     * robot's major axis.
+     */
+    static constexpr double IR_RANGEFINDER_OFFSET = 25;
+
     static constexpr auto MAX_NUM_TARGETS = 10;
     static constexpr auto NO_TARGET = -1;
 
@@ -37,6 +43,10 @@ class Robot {
      * to determine the block is detected. [mm]
      */
     static constexpr auto BLOCK_MIN_DISPARITY = 30;
+    /**
+     * @brief Multiplier of disparity at which the block is considered lost.
+     */
+    static constexpr auto BLOCK_LOST_MULT = 1.2;
     /**
      * @brief Distance from block at which to close the claw. [mm]
      */
@@ -56,13 +66,17 @@ class Robot {
      * less than itself, as otherwise we get one cycle eating into
      * the time of the next one.
      */
-    static constexpr auto LOGIC_PERIOD_MS = 1000;
+    static constexpr auto LOGIC_PERIOD_MS = 100;
 
     // only using 8bit resolution for motor PWM
     static constexpr auto MOTOR_PWM_MAX = 255;
 
     // global speed scale
     static constexpr auto SPEED_SCALE = 1;
+
+    // Speeds for cube pickup.
+    static constexpr auto CUBE_PICKUP_TURN_SPEED = SPEED_SCALE*0.25*MOTOR_PWM_MAX;
+    static constexpr auto CUBE_PICKUP_FORWARD_SPEED = SPEED_SCALE*0.5*MOTOR_PWM_MAX;
 
     // Servo positions.
     static constexpr int ARM_DOWN = 170;
