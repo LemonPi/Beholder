@@ -55,7 +55,11 @@ class DistanceSensor(Sensor):
         return world.get_rangefinder_distance(float(pos[0]), float(pos[1]), heading + self.orientation)
     
     def get_reading_probability(self, absolute, reading):
-        return w_gauss(absolute, reading, self.sigma)
+        # Readings which are out of range are considered to be perfectly accurate
+        if (absolute >= 0.499):
+            return 1
+        else:
+            return w_gauss(absolute, reading, self.sigma)
 
     def draw(self, window, rpos, heading, reading):
         pos = self.get_position(rpos, float(heading))

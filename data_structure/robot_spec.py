@@ -1,9 +1,13 @@
 import time
 from typing import NamedTuple
 import struct
+import functools
+import operator
 
 from .sensors import Sensor
 
+def compute_crc(buffer):
+    return functools.reduce(operator.xor, buffer)
 
 class RobotSpec(object):
     def __init__(self, sensors_names):
@@ -12,31 +16,21 @@ class RobotSpec(object):
 
         self.sensors = self.SensorTuple(*[s for n, s in sensors_names])
 
-class SensorReadingPacketizer(object):
-    def __init__(self, robot_spec):
-        format_string = "Iff" + "I"*len(robot_spec.sensors) + "B"
-        self.struct = struct.Struct(format_string)
-        self.NUM_BYTES = self.struct.size
+class Packetizer(object):
+    def __init__(self, fmt_string):
+        self._base_struct = struct.Struct(fmt_string)        
+        self._crc_struct = struct.Struct(fmt_string + "B")
+        self.NUM_BYTES = self._crc_struct.size
     
-    def to_packet(self, t, d, dh, sensor_readings):
-        return self.struct.pack(t, d, dh, *sensor_readings)
-    
-    def from_packet(self, buffer):
-        results = self.struct.unpack(buffer)
-        return results[0], results[1], results[2], results[3:6], results[6]
-
-class PoseUpdatePacketizer(object):
-    def __init__(self):
-        format_string = "II3f"
-        self.struct = struct.Struct(format_string)
-        self.NUM_BYTES = self.struct.size
-    
-    def to_packet(self, seq_num, packet_t, x, y, h):
-        return self.struct.pack(seq_num, packet_t, x, y, h)
+    def to_packet(self, values):
+        base_buffer = self._base_struct.pack(*values)
+        return self._crc_struct.pack(*(values + (compute_crc(base_buffer),)))        
     
     def from_packet(self, buffer):
-        results = self.struct.unpack(buffer)
-        return tuple(results)
+        my_crc = compute_crc(buffer[:-1])
+        results = self._crc_struct.unpack(buffer)
+        crc = results[-1]
+        return (crc == my_crc), results[:-1]
 
 def main():
     # ---- ROBOT SPEC
