@@ -16,9 +16,8 @@ MotorController leftMc(L_C, L_D, L_ENABLE);
 MotorController rightMc(R_C, R_D, R_ENABLE);
 
 void setup() {
-	constexpr auto speed = 60;
 	leftMc.setVelocity(0);
-	rightMc.setVelocity(0);
+	rightMc.setVelocity(70);
 	// pinMode(L_C, OUTPUT);
 	// pinMode(L_D, OUTPUT);
 	// pinMode(R_C, OUTPUT);

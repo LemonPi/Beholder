@@ -1,13 +1,18 @@
 #include <SoftwareSerial.h>
 
-constexpr long BL_RX = 10;
-constexpr long BL_TX = 11;
+constexpr auto BL_RX = 14;
+constexpr auto BL_TX = 15;
+
+// constexpr long BL_RX = 2;
+// constexpr long BL_TX = 4;
 
 unsigned long txTimes[256] = {0};
 unsigned long lastGroupTxTime = 0;
 
 SoftwareSerial EEBlue(BL_RX, BL_TX); // RX | TX
 void setup() {
+	pinMode(BL_RX, INPUT);
+	pinMode(BL_TX, OUTPUT);
   Serial.begin(9600);
   Serial.println("Reading from bluetooth");
   EEBlue.begin(9600);

@@ -14,30 +14,15 @@ static constexpr auto TURN_PWM = 150 * Robot::SPEED_SCALE;
 
 constexpr auto NUM_ROUNDS_TOO_FAR_WAIT = 3;
 
-WallFollow::WallFollow()
-    : _state(State::FOLLOWING),
-      _wallFollowController(&_wallDistanceCurrent, &_wallControllerOutput,
-                            &_wallDistanceSetpoint, WALL_KP, WALL_KI, WALL_KD,
-                            P_ON_E, REVERSE) {
-    // set sample time for PID controllers to be less than logic loop so that
-    // they can be called each cycle
-    _wallFollowController.SetSampleTime(Robot::LOGIC_PERIOD_MS - 1);
-
-    // controller output clamping if necessary
-    //    static_assert(WALL_FWD_PWM + WALL_FOLLOW_TURN_PWM <= MOTOR_PWM_MAX,
-    //                  "Wall follow output needs to be within PWM ranges");
-    _wallFollowController.SetOutputLimits(-WALL_FOLLOW_TURN_PWM,
-                                          WALL_FOLLOW_TURN_PWM);
+WallFollow::WallFollow() : _state(State::FOLLOWING) {
 }
 
 void WallFollow::followOn() {
     // turn on controllers
-    _wallFollowController.SetMode(AUTOMATIC);
 }
 
 void WallFollow::followOff() {
     // turn off controllers
-    _wallFollowController.SetMode(MANUAL);
 }
 
 void WallFollow::reset() {
@@ -62,6 +47,12 @@ void WallFollow::compute(BehaviourControl& ctrl) {
     if (_wallDistanceCurrent == 0) {
         ctrl.speed = 0;
         ctrl.heading = 0;
+        ctrl.active = false;
+        return;
+    }
+
+    // don't drive if wall in front
+    if (Sonars::getReading(Sonars::FRONT) < 90) {
         ctrl.active = false;
         return;
     }
