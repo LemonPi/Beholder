@@ -9,6 +9,7 @@ Robot::Robot(MotorController leftMc, MotorController rightMc, Pose initialPose)
     : _on(false), _lastRunTime(0U), _pose(initialPose), _leftMc(leftMc),
       _rightMc(rightMc), _curTargetId(NO_TARGET) {
 
+    // by default all behaviours are allowed
     for (int b = 0; b < BehaviourId::NUM_BEHAVIOURS; ++b) {
         _allowedBehaviours[b] = true;
     }
@@ -137,6 +138,12 @@ bool Robot::run() {
         if (_allowedBehaviours[BehaviourId::TURN_IN_PLACE]) {
             computeTurnInPlace();
         }
+        if (_allowedBehaviours[BehaviourId::GET_CUBE]) {
+            computeGetCube();
+        }
+        if (_allowedBehaviours[BehaviourId::PUT_CUBE]) {
+            computePutCube();
+        }
     }
 
     const auto lastActive = _activeBehaviourId;
@@ -204,6 +211,8 @@ void Robot::processNextTarget(BehaviourId behaviourCompleted) {
         return;
     }
 
+    const auto completedTarget = _targets[_curTargetId];
+
     // always stop turning (will get activated immediately after if necessary)
     _behaviours[BehaviourId::TURN_IN_PLACE].active = false;
 
@@ -211,7 +220,13 @@ void Robot::processNextTarget(BehaviourId behaviourCompleted) {
         _processBehaviours = true;
     }
 
-    // TODO gameplay logic
+    // reached the place where we need to find and get the cube
+    // enable that behaviour
+    if (completedTarget.type == Target::Type::GET_CUBE) {
+        _behaviours[BehaviourId::GET_CUBE].active = true;
+    } else if (completedTarget.type == Target::Type::PUT_CUBE) {
+        _behaviours[BehaviourId::PUT_CUBE].active = true;
+    }
 }
 
 void Robot::processPCPacket(const PCPacketData& pcPacket) {

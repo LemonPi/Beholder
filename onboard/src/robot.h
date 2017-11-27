@@ -48,10 +48,12 @@ class Robot {
     // behaviour layers ordered in increasing priority
     enum BehaviourId {
         WAIT = 0,
-        NAVIGATE,
         WALL_FOLLOW,
+        NAVIGATE,
         TURN_IN_FRONT_OF_WALL,
         TURN_IN_PLACE,
+        GET_CUBE,
+        PUT_CUBE,
         AVOID_BOUNDARY,
         NUM_BEHAVIOURS
     };
@@ -92,6 +94,8 @@ class Robot {
     // layers so we can't abstract the computation into their classes
     void computeNavigate();
     void computeTurnInPlace();
+    void computeGetCube();
+    void computePutCube();
     void computeAvoidBoundary();
 
     /**

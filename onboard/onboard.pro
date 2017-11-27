@@ -11,7 +11,8 @@ SOURCES += \
     src/pose.cpp \
     src/network.cpp \
     src/behaviours/navigate.cpp \
-    src/target.cpp
+    src/target.cpp \
+    src/behaviours/cube.cpp
 
 HEADERS += \
     onboard.ino \
