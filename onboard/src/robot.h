@@ -1,8 +1,9 @@
 #ifndef ROBOT_H
 #define ROBOT_H
 
-#include <MotorController.h>
 #include <CircularBuffer.h>
+#include <MotorController.h>
+#include <Servo.h>
 
 #include "behaviour_control.h"
 #include "target.h"
@@ -31,7 +32,22 @@ class Robot {
     // communication
     static constexpr auto MAX_NUM_POSE_UPDATES = 10;
 
-    enum GetCubeState { SEARCH, DRIVE_FWD, CLOSING, RAISING, NUM_STATES };
+    /**
+     * @brief Required minimum disagreement between IR readings
+     * to determine the block is detected. [mm]
+     */
+    static constexpr auto BLOCK_MIN_DISPARITY = 30;
+    /**
+     * @brief Distance from block at which to close the claw. [mm]
+     */
+    static constexpr auto BLOCK_MIN_DISTANCE = 1;
+    /**
+     * @brief Required number of consecutive logic cycles we have to see the block.
+     */
+    static constexpr auto REQUIRED_NUM_CONSECUTIVE_BLOCK_SIGHTINGS = 3;
+
+    enum GetCubeState { START, SEARCH_LEFT, SEARCH_RIGHT, DRIVE_FWD, CLOSING, RAISING, GET_CUBE_NUM_STATES };
+    enum PutCubeState { LOWERING, OPENING, PUT_CUBE_NUM_STATES };
 
   public:
     /**
@@ -40,13 +56,24 @@ class Robot {
      * less than itself, as otherwise we get one cycle eating into
      * the time of the next one.
      */
-    static constexpr auto LOGIC_PERIOD_MS = 100;
+    static constexpr auto LOGIC_PERIOD_MS = 1000;
 
     // only using 8bit resolution for motor PWM
     static constexpr auto MOTOR_PWM_MAX = 255;
 
     // global speed scale
     static constexpr auto SPEED_SCALE = 1;
+
+    // Servo positions.
+    static constexpr int ARM_DOWN = 170;
+    static constexpr int ARM_SEARCH_POSITION = ARM_DOWN - 10;
+    static constexpr int ARM_UP = 75 + 50; // Accomodating for IR rangefinder.
+    static constexpr int CLAW_CLOSED = 35;
+    static constexpr int CLAW_OPENED = 120;
+
+    static constexpr int ARM_SPEED = 5;
+    static constexpr int CLAW_SPEED = 5;
+
     // behaviour layers ordered in increasing priority
     enum BehaviourId {
         WAIT = 0,
@@ -135,6 +162,10 @@ class Robot {
 
     // motors
     MotorController _leftMc, _rightMc;
+    Servo _armServo;  // create servo object to control arm
+    int _armPosition;
+    Servo _clawServo;  // create servo object to control claw
+    int _clawPosition;
 
     // behaviour bookkeeping
     BehaviourControl _behaviours[BehaviourId::NUM_BEHAVIOURS];
@@ -147,6 +178,9 @@ class Robot {
 
     // cube
     GetCubeState _getCubeState;
+    Pose _getCubeTurnStartPose;
+    PutCubeState _putCubeState;
+    int _numConsecutiveBlockSightings;
 
     // behaviour state
     WallTurn _wallTurn;

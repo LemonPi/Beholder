@@ -1,13 +1,15 @@
 #include <Arduino.h>
 #include <WheelEncoders.h>
 
+#include "constants.h"
 #include "debug.h"
 #include "robot.h"
 #include "network.h"
 
 Robot::Robot(MotorController leftMc, MotorController rightMc, Pose initialPose)
     : _on(false), _lastRunTime(0U), _pose(initialPose), _leftMc(leftMc),
-      _rightMc(rightMc), _curTargetId(NO_TARGET) {
+      _rightMc(rightMc), _curTargetId(NO_TARGET), _getCubeState(START),
+      _putCubeState(LOWERING) {
 
     // by default all behaviours are allowed
     for (int b = 0; b < BehaviourId::NUM_BEHAVIOURS; ++b) {
@@ -24,6 +26,10 @@ Robot::Robot(MotorController leftMc, MotorController rightMc, Pose initialPose)
 void Robot::turnOn() {
     _on = true;
     _wallFollow.followOn();
+
+    // Init Servo objects.
+    _clawServo.attach(CLAW_PIN);
+    _armServo.attach(ARM_PIN);
 }
 
 void Robot::turnOff() {

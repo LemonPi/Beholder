@@ -3,11 +3,7 @@
 
 #include <Arduino.h>
 
-// IR Rangefinders
-constexpr auto IR_RANGEFINDER_LOW = A15;
-constexpr auto IR_RANGEFINDER_HIGH = A14;
-// The highest reading we should measure from the IR rangefinders [mm].
-constexpr auto MAX_IR_RANGEFINDER_DISTANCE = 150;
+constexpr auto IR_RANGEFINDER = A15;
 
 // Arm
 constexpr auto ARM_PIN = 5;
