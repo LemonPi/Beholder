@@ -37,11 +37,11 @@ MotorController rightMc(R_C, R_D, R_ENABLE);
 Robot robot(leftMc, rightMc, Pose{0, 0, 0});
 
 void setup() {
+    Network::begin(9600);
     Serial.begin(9600);
 
     Sonars::setupPingTimers();
     WheelEncoders::setUp(LEFT_INTERRUPT_PIN, RIGHT_INTERRUPT_PIN);
-    Network::begin(9600);
 
     // wait for PC to turn it on
     robot.turnOn();

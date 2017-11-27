@@ -247,6 +247,8 @@ void Robot::processPCPacket(const PCPacketData& pcPacket) {
         PRINTLN("pose update");
         // replace our own pose with the updated one
         _pose = pcPacket.pose;
+
+        printPose(_pose);
         // apply historical odometry updates on top of this pose
         // this is always run before the next logic cycle's odometry occurs
         // so if our current SN is 6 and the packet SN is 2
@@ -258,6 +260,8 @@ void Robot::processPCPacket(const PCPacketData& pcPacket) {
              sn >= 0; --sn) {
             applyOdometryUpdate(_lastPoseUpdates[sn]);
         }
+
+        printPose(_pose);
         break;
     case PCPacketIntent::POSE_PING:
         PRINTLN("pose ping");

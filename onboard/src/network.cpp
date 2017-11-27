@@ -2,8 +2,10 @@
 #include "constants.h"
 #include "debug.h"
 
+// SoftwareSerial Network::_blueTooth(BL_RX, BL_TX);
+#define _blueTooth Serial3
+
 sequence_num_t Network::_sequenceNum = 0;
-SoftwareSerial Network::_blueTooth(BL_RX, BL_TX);
 size_t Network::_pcPacketIndex = 0;
 Network::RxState Network::_rxState = Network::RxState::WAIT_FOR_START;
 
@@ -72,7 +74,7 @@ bool Network::recvPcPacket() {
     // read into byte buffer of pcPacket until full
     if (_blueTooth.available() > 0) {
         const auto c = _blueTooth.read();
-        PRINTLN(c);
+        //        PRINTLN(c);
 
         switch (_rxState) {
         case RxState::WAIT_FOR_START:
@@ -95,7 +97,7 @@ bool Network::recvPcPacket() {
 
                 if (c == crc) {
                     _rxState = RxState::HAVE_VALID_PACKET;
-                    PRINTLN("got valid packet");
+                    PRINTLN("vp");
                 } else {
                     // something went wrong and we got back CRC
                     // just ignore packet

@@ -2,11 +2,20 @@
 
 #include "pose.h"
 #include "network.h"
+#include "debug.h"
 
 void Pose::deserializeObj(const uint8_t* const buffer, uint8_t& index) {
     deserialize(buffer, index, x);
     deserialize(buffer, index, y);
     deserialize(buffer, index, heading);
+}
+
+void printPose(const Pose& pose) {
+    PRINT(pose.x);
+    PRINT(" ");
+    PRINT(pose.y);
+    PRINT(" ");
+    PRINTLN(pose.heading);
 }
 
 coord_t distance(const Pose& a, const Pose& b) {

@@ -106,7 +106,9 @@ class Network {
     static size_t _pcPacketIndex;
     static RxState _rxState;
 
-    static SoftwareSerial _blueTooth;
+    // software serial's not working for RX; instead use HardwareSerial
+    // Using Serial3 which is pins 14 and 15 for Mega
+    //    static SoftwareSerial _blueTooth;
 };
 
 #endif // NETWORK_H

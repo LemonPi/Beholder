@@ -23,6 +23,8 @@ struct PoseUpdate {
     static constexpr auto SERIALIZED_SIZE = sizeof(coord_t) + sizeof(heading_t);
 };
 
+void printPose(const Pose& pose);
+
 /**
  * @brief Shortest path distance [mm] between two poses ignoring heading
  * @param a
