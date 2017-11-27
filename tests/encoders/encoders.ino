@@ -20,8 +20,8 @@ void setup() {
 }
 
 void loop() {
-    // leftMc.setVelocity(50);
-    rightMc.setVelocity(50);
+    leftMc.setVelocity(100);
+    rightMc.setVelocity(100);
     leftMc.go();
     rightMc.go();
 
