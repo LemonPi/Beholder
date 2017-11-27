@@ -36,9 +36,15 @@ heading_t wrapHeading(heading_t heading);
  * @brief a.heading - b.heading wrapped
  * @param a
  * @param b
- * @return
  */
 heading_t headingDifference(const Pose& a, const Pose& b);
+
+/**
+ * @brief Heading change required from a to reach b in a straight line
+ * @param a
+ * @param b
+ */
+heading_t headingToPoint(const Pose& a, const Pose& b);
 
 template <typename T>
 bool closeEnough(const T& a, const T& b, T epsilon) {

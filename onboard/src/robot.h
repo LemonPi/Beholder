@@ -109,8 +109,9 @@ class Robot {
     /**
      * @brief Process next target to reach, activating and deactivating
      * behaviours as necessary. Call after reaching current target.
+     * @param behaviourCompleted The behaviour that completed the current target
      */
-    void processNextTarget();
+    void processNextTarget(BehaviourId behaviourCompleted);
 
     /**
      * @brief Semantically process a packet from the PC.
@@ -133,6 +134,10 @@ class Robot {
     BehaviourControl _behaviours[BehaviourId::NUM_BEHAVIOURS];
     bool _allowedBehaviours[BehaviourId::NUM_BEHAVIOURS];
     BehaviourId _activeBehaviourId;
+    bool _processBehaviours;
+
+    // navigation
+    coord_t _lastDistToTarget;
 
     // behaviour state
     WallTurn _wallTurn;

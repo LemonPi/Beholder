@@ -19,6 +19,12 @@ heading_t headingDifference(const Pose& a, const Pose& b) {
     return wrapHeading(a.heading - b.heading);
 }
 
+heading_t headingToPoint(const Pose& a, const Pose& b) {
+    const auto dx = b.x - a.x;
+    const auto dy = b.y - a.y;
+    return wrapHeading(atan2(dy, dx) - a.heading);
+}
+
 heading_t wrapHeading(heading_t heading) {
     if (heading > PI) {
         heading -= 2 * PI;

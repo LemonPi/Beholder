@@ -118,14 +118,22 @@ bool Robot::run() {
     // we get per cycle
     processOdometry();
 
-    // TODO loop through behaviour layers and see which ones want to take over
-    // control
-    if (_allowedBehaviours[BehaviourId::WALL_FOLLOW]) {
-        _wallFollow.compute(_behaviours[BehaviourId::WALL_FOLLOW]);
-    }
-    if (_allowedBehaviours[BehaviourId::TURN_IN_FRONT_OF_WALL]) {
-        _wallTurn.compute(_behaviours[BehaviourId::TURN_IN_FRONT_OF_WALL],
-                          _pose);
+    _processBehaviours = true;
+
+    while (_processBehaviours) {
+        _processBehaviours = false;
+        // TODO loop through behaviour layers and see which ones want to take
+        // over control
+        if (_allowedBehaviours[BehaviourId::WALL_FOLLOW]) {
+            _wallFollow.compute(_behaviours[BehaviourId::WALL_FOLLOW]);
+        }
+        if (_allowedBehaviours[BehaviourId::TURN_IN_FRONT_OF_WALL]) {
+            _wallTurn.compute(_behaviours[BehaviourId::TURN_IN_FRONT_OF_WALL],
+                              _pose);
+        }
+        if (_allowedBehaviours[BehaviourId::NAVIGATE]) {
+            computeNavigate();
+        }
     }
 
     const auto lastActive = _activeBehaviourId;
@@ -185,18 +193,19 @@ void Robot::controlMotors(const BehaviourControl& control) {
     //    PRINTLN(_rightMc.getVelocity());
 }
 
-void Robot::processNextTarget() {
+void Robot::processNextTarget(BehaviourId behaviourCompleted) {
+    PRINT("Completed ");
+    PRINTLN(behaviourCompleted);
     // should never call this function when out of targets
     if (_curTargetId < 0) {
-        // TODO add debug serial printing
         return;
     }
 
-    --_curTargetId;
+    // always stop turning (will get activated immediately after if necessary)
+    _behaviours[BehaviourId::TURN_IN_PLACE].active = false;
 
-    // if we're out of targets we can disable navigation
-    if (_curTargetId == NO_TARGET) {
-        _behaviours[BehaviourId::NAVIGATE].active = false;
+    if (--_curTargetId >= 0) {
+        _processBehaviours = true;
     }
 
     // TODO gameplay logic
