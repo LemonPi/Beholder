@@ -35,6 +35,13 @@ bool Network::sendRobotPacket(const PoseUpdate& poseUpdate,
     }
     serialize(_robotPacketBuf, serializationIndex, activeBehaviourId);
 
+    // CRC error checking
+    auto crc = _robotPacketBuf[0];
+    for (auto i = 1; i < serializationIndex; ++i) {
+        crc ^= _robotPacketBuf[i];
+    }
+    serialize(_robotPacketBuf, serializationIndex, crc);
+
     if (serializationIndex != R::PACKET_SIZE) {
         ERROR(5);
         PRINTLN(serializationIndex);
@@ -42,15 +49,9 @@ bool Network::sendRobotPacket(const PoseUpdate& poseUpdate,
     }
 
     _blueTooth.write(R::PACKET_START_BYTE);
+
     const auto sentBytes =
         _blueTooth.write(_robotPacketBuf, serializationIndex);
-
-    // CRC error checking
-    auto crc = _robotPacketBuf[0];
-    for (auto i = 1; i < serializationIndex; ++i) {
-        crc ^= _robotPacketBuf[i];
-    }
-    _blueTooth.write(crc);
 
     if (sentBytes != serializationIndex) {
         ERROR(4);
@@ -59,6 +60,7 @@ bool Network::sendRobotPacket(const PoseUpdate& poseUpdate,
     } else {
         return true;
     }
+    return true;
 }
 
 bool Network::recvPcPacket() {
@@ -68,13 +70,15 @@ bool Network::recvPcPacket() {
     }
 
     // read into byte buffer of pcPacket until full
-    if (_blueTooth.available()) {
+    if (_blueTooth.available() > 0) {
         const auto c = _blueTooth.read();
+        PRINTLN(c);
 
         switch (_rxState) {
         case RxState::WAIT_FOR_START:
             if (c == PC::PACKET_START_BYTE) {
                 _rxState = RxState::READING;
+                PRINTLN("r");
                 _pcPacketIndex = 0;
             }
             break;

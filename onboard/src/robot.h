@@ -46,7 +46,7 @@ class Robot {
     static constexpr auto MOTOR_PWM_MAX = 255;
 
     // global speed scale
-    static constexpr auto SPEED_SCALE = 1;
+    static constexpr auto SPEED_SCALE = 0.8;
     // behaviour layers ordered in increasing priority
     enum BehaviourId {
         WAIT = 0,

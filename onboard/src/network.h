@@ -57,13 +57,14 @@ class Network {
         static constexpr auto PACKET_SIZE =
             PoseUpdate::SERIALIZED_SIZE +
             sizeof(sonar_reading_t) * Sonars::NUM_SONAR +
-            sizeof(sequence_num_t) + sizeof(uint8_t);
-        static constexpr char PACKET_START_BYTE = 0xA1;
+            sizeof(sequence_num_t) + sizeof(uint8_t) +
+            sizeof(uint8_t); // CRC at end
+        static constexpr uint8_t PACKET_START_BYTE = 0xA1;
     };
 
     struct PC {
         static constexpr auto PACKET_SIZE = PCPacketData::SERIALIZED_SIZE;
-        static constexpr char PACKET_START_BYTE = 0xF5;
+        static constexpr uint8_t PACKET_START_BYTE = 0xF5;
     };
 
     enum RxState { WAIT_FOR_START, READING, HAVE_VALID_PACKET };
