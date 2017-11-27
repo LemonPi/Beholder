@@ -19,7 +19,7 @@ def print_nearby_devices():
     for addr, name in nearby_devices:
         print("  %s - %s" % (addr, name))
 
-print_nearby_devices()
+# print_nearby_devices()
 
 SPP_UID = "00001101-0000-1000-8000-00805f9b34fb"
 # for this module only
@@ -42,6 +42,7 @@ print("connecting to \"%s\" on %s" % (name, host))
 # Create the client socket
 sock = bl.BluetoothSocket(bl.RFCOMM)
 sock.connect((host, port))
+sock.setblocking(True)
 
 # PC is a client; sends stuff to Arduino
 if SEND:
@@ -50,7 +51,8 @@ if SEND:
         data = input()
         if len(data) == 0:
             break
-        sock.send(data)
+        l = sock.send(data)
+        print("Sent: {}".format(l))
 else:
     print("connected. receive stuff")
     while True:

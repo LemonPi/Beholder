@@ -6,7 +6,6 @@ import numpy as np
 from constants import Colours
 from data_structure import Particle
 from display import Drawable, draw_triangle
-from .robot_spec import SensorReadingPacketizer
 
 from multiprocessing import Process, Value, Array
 

@@ -43,6 +43,7 @@ void setup() {
     WheelEncoders::setUp(LEFT_INTERRUPT_PIN, RIGHT_INTERRUPT_PIN);
     Network::begin(9600);
 
+    // wait for PC to turn it on
     robot.turnOn();
 }
 

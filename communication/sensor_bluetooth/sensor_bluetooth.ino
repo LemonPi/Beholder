@@ -13,7 +13,6 @@ void setup() {
   Serial.begin(9600);
   Serial.println("Bluetooth ready");
   EEBlue.begin(9600);
-  EEBlue.write(0xA2);
 }
 
 struct pose_update {
@@ -67,8 +66,8 @@ void loop() {
       packet.sensor_data.left = 100;
       EEBlue.write(0xA1);
 
-      uint8_t index = 0;
-      packet.sensor_data.serializeObj(serialBuffer, index);
+//      uint8_t index = 0;
+//      packet.sensor_data.serializeObj(serialBuffer, index);
       
       // int sent = EEBlue.write(packet.byte_data, PACKET_SIZE);
 //      if (index != sensor_struct::PACKET_SIZE) {
@@ -80,7 +79,7 @@ void loop() {
 //      index = 0;
 //      uint32_t tester = 5;
 //      serialize(serialBuffer, index, tester);
-       const auto sentBytes = EEBlue.write(serialBuffer, index);
+//       const auto sentBytes = EEBlue.write(serialBuffer, index);
 //      Serial.print(serialBuffer[0]);
 //      Serial.print(serialBuffer[1]);
 //      Serial.print(serialBuffer[2]);
@@ -89,18 +88,18 @@ void loop() {
 //      Serial.print(serialBuffer[5]);
 //      Serial.print(serialBuffer[6]);
 //      Serial.print(serialBuffer[7]);
-      for (uint8_t i = 0; i < index; ++i) {
-        Serial.print(serialBuffer[i]);
-        Serial.print(" ");
-      }
-      Serial.println();
-      
-      pack_num++;
+//      for (uint8_t i = 0; i < index; ++i) {
+//        Serial.print(serialBuffer[i]);
+//        Serial.print(" ");
+//      }
+//      Serial.println();
+//      
+//      pack_num++;
       last_packet = now;
     }
-    if (EEBlue.available()) {
-      const auto rxTime = millis();
-      const auto c = EEBlue.read();
-      Serial.println(rxTime - last_packet);
-    }
+//    if (EEBlue.available()) {
+//      const auto rxTime = millis();
+//      const auto c = EEBlue.read();
+//      Serial.println(rxTime - last_packet);
+//    }
 }

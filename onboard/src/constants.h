@@ -28,7 +28,9 @@ constexpr auto L_ENABLE = 3;
 constexpr auto R_ENABLE = 2;
 
 // bluetooth
-constexpr auto BL_RX = 5;
-constexpr auto BL_TX = 6;
+constexpr auto BL_RX = 15;
+constexpr auto BL_TX = 14;
+// constexpr auto BL_RX = 2;
+// constexpr auto BL_TX = 4;
 
 #endif // CONSTANTS_H

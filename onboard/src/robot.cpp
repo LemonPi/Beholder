@@ -103,6 +103,7 @@ bool Robot::run() {
     // we receive packets even when we're not "running" because we could be told
     // to turn on
     if (Network::recvPcPacket()) {
+        PRINTLN("recv");
         const auto pcUpdate = Network::getLatestPCPacket();
         processPCPacket(pcUpdate);
         Network::resetPcPacket();

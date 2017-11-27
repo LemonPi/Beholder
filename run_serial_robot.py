@@ -10,14 +10,14 @@ import serial
 import pickle
 
 from constants import Units
-from data_structure import World, ParticleFilter, Particle, RobotSpec, FloorSensor, DistanceSensor, SensorReadingPacketizer, SensorRobot
+from data_structure import World, ParticleFilter, Particle, RobotSpec, FloorSensor, DistanceSensor, Packetizer, SensorRobot
 from display import SimulatorWindow
 
 # ---- PARTICLE FILTER PARAMS
 N_PARTICLES = 250
 POS_SIGMA = 0.02
 H_SIGMA = 0.02
-UPDATE_EVERY = 10
+UPDATE_EVERY = 30
 
 # ---- ROBOT SPEC
 # ------------------------------------------------------------
@@ -35,7 +35,8 @@ robot_spec = RobotSpec(sensors)
 # ---- SERIAL CODE
 # ------------------------------------------------------------
 def serial_reader(spec, positions, headings, readings):
-    packet_parser = SensorReadingPacketizer(spec)
+    sensor_packetizer = Packetizer(("I","f","f","I","I","I","B"))
+    pose_packetizer = Packetizer(("f","f","f","I","B"))
 
     # SERIAL PARAMS
     port = '/dev/ttyUSB0'
@@ -77,6 +78,7 @@ def serial_reader(spec, positions, headings, readings):
         if(update_num % UPDATE_EVERY == 0):
             pf.resample()
 
+       
         # Shared memory
         positions[:] = list(pf.particle_pos.reshape(2*N_PARTICLES,))
         headings[:] = list(pf.particle_h)
@@ -84,10 +86,14 @@ def serial_reader(spec, positions, headings, readings):
         update_num += 1
         last_packet = packet_time
 
+ROBOT_PACKET_START_BYTE = b'\xa1'
+PC_PACKET_START_BYTE = b'\xf5'
+
 # ---- BLUETOOTH CODE
 # ------------------------------------------------------------
 def bluetooth_reader(spec, shm_positions, shm_headings, shm_readings):
-    packet_parser = SensorReadingPacketizer(spec)
+    sensor_packetizer = Packetizer("IffIIIB")
+    pose_packetizer = Packetizer("fffIB")
 
     # ---- BLUETOOTH SETUP
     SPP_UID = "00001101-0000-1000-8000-00805f9b34fb"
@@ -111,7 +117,12 @@ def bluetooth_reader(spec, shm_positions, shm_headings, shm_readings):
     # Create the client socket
     sock = bl.BluetoothSocket(bl.RFCOMM)
     sock.connect((host, port))
-    _ = sock.recv(10000)     # Get rid of all trash
+    sock.settimeout(1)
+    try:
+        _ = sock.recv(10000)     # Get rid of all trash
+    except bl.btcommon.BluetoothError as e:
+        pass
+
     sock.setblocking(True)
 
     # ---- PARTICLE FILTER SETUP
@@ -124,21 +135,36 @@ def bluetooth_reader(spec, shm_positions, shm_headings, shm_readings):
     # Create the particle filter
     pf = ParticleFilter(N_PARTICLES, POS_SIGMA, H_SIGMA)
 
-    # Wait for the start signal
-    print("Waiting for start signal")
-    # while(True):
-    #     char_in = sock.recv(1)
-    #     if (char_in == b'\xa2'):
-    #         print('Starting...')            
-    #         break
 
+    # ---- START COMMUNICATIONS
+
+    # TODO: Init robot state
+    # Create a packet to send back to the robot
+    data = (0.0, 0.0, 0.0, 0, 250)      # Start packet
+    packet = pose_packetizer.to_packet(data)
+
+    # # Send data to robot
+    # for i in range(10):
+    # print("Sending start signal")
+    # sock.send(PC_PACKET_START_BYTE)
+    # sock.send(packet)
+    # time.sleep(1)
+
+    # Initialize everything
     update_num = 1
     last_packet = time.time()
 
-    # ---- READ LOOP
+    # ------------------------------------------------------------
+    # ---- READ-UPDATE LOOP
+    # ------------------------------------------------------------
     while(True):
+
+        # ---- READ PACKETS
+        # ------------------------------------------------------------
+        # Listen for packets from the robot        
         while(True):
             char_in = sock.recv(1)
+            print(char_in, ord(char_in), char_in[0])
             # Check the reset character
             # if (char_in == b'\xa2'):
             #     print('Resetting...')
@@ -147,30 +173,44 @@ def bluetooth_reader(spec, shm_positions, shm_headings, shm_readings):
             #     pf = ParticleFilter(N_PARTICLES, POS_SIGMA, H_SIGMA)
             #     break
             # Wait for start character
-            if (char_in == b'\xa1'):
+            if (char_in == ROBOT_PACKET_START_BYTE):
                 break
         
         # Read packet
         packet_time = time.time()
         buffer = b''
-        for i in range(packet_parser.NUM_BYTES):
+        for i in range(sensor_packetizer.NUM_BYTES):
             b = sock.recv(1)
             buffer += b
 
-        identifier, d, dh, readings, state = packet_parser.from_packet(buffer)
-        print(identifier, d, dh, readings, packet_time - last_packet)
+        # Parse Packet
+        crc_correct, packet_contents = sensor_packetizer.from_packet(buffer) 
+        (seq_num, d, dh, sl, sf, sr, behaviour) = packet_contents
+        readings = (sf, sr, sl)
+        print(crc_correct, seq_num, d, dh, readings, packet_time - last_packet)
+
         pf.update_particle_weights(robot_spec, [x/1000.0 for x in readings], world)
-        pf.move_particles(d, dh)      # Move the robot according to the encoder readings
+        pf.move_particles(d  / 1000.0, dh)        # Move the robot according to the encoder readings
         
-        if(update_num % UPDATE_EVERY == 0):
+        # Resample particles
+        if (update_num % UPDATE_EVERY == 0):
             pf.resample()
 
-        # print("Update took: {}".format(time.time() - packet_time))
+        # ---- UPDATE ROBOT
+        # ------------------------------------------------------------
+        # Get an estimate of the robot's position
+        com_pos, com_h, com_uncertainty, is_converged = pf.get_pose_estimate(convergence_radius=0.4)
 
-        # Send a result back
-        sock.send(b'\xa1')
+        # Create a packet to send back to the robot
+        intent = 252 if is_converged else 253
+        data = (float(com_pos[0]), float(com_pos[1]), float(com_h), seq_num, intent)
+        packet = pose_packetizer.to_packet(data)
+        
+        # Send data to robot
+        # sock.send(PC_PACKET_START_BYTE)
+        # sock.send(packet)
 
-        # Shared memory
+        # Update shared memory
         shm_positions[:] = list(pf.particle_pos.reshape(2*N_PARTICLES,))
         shm_headings[:] = list(pf.particle_h)
         shm_readings[:] = [x/1000.0 for x in readings]
@@ -184,8 +224,6 @@ def bluetooth_reader(spec, shm_positions, shm_headings, shm_readings):
 positions = mpc.Array('f', 2*N_PARTICLES)
 headings = mpc.Array('f', N_PARTICLES)
 readings = mpc.Array('f', len(robot_spec.sensors))
-
-pacman = SensorReadingPacketizer(robot_spec)
 
 #p = mpc.Process(target=serial_reader, args=(robot_spec, positions, headings))
 p = mpc.Process(target=bluetooth_reader, args=(robot_spec, positions, headings, readings))

@@ -1,8 +1,6 @@
 #ifndef WALL_FOLLOW_H
 #define WALL_FOLLOW_H
 
-#include <PID_v1.h>
-
 #include "../pose.h"
 #include "../behaviour_control.h"
 
@@ -34,8 +32,6 @@ class WallFollow {
     double _wallDistanceCurrent;
     double _wallControllerOutput;
     double _wallDistanceSetpoint;
-
-    PID _wallFollowController;
 };
 
 #endif // WALL_FOLLOW_H
