@@ -91,10 +91,11 @@ bool Network::recvPcPacket() {
 
                 if (c == crc) {
                     _rxState = RxState::HAVE_VALID_PACKET;
+                    PRINTLN("got valid packet");
                 } else {
                     // something went wrong and we got back CRC
                     // just ignore packet
-                    ERROR(7);
+                    ERROR("bad CRC");
                     resetPcPacket();
                 }
             } else {

@@ -99,9 +99,6 @@ bool Robot::run() {
     if (Network::recvPcPacket()) {
         const auto pcUpdate = Network::getLatestPCPacket();
         processPCPacket(pcUpdate);
-        // TODO handle PC update (note always updates before applying this
-        // cycle's pose update)
-
         Network::resetPcPacket();
     }
 
@@ -232,14 +229,15 @@ void Robot::processNextTarget(BehaviourId behaviourCompleted) {
 void Robot::processPCPacket(const PCPacketData& pcPacket) {
     switch (pcPacket.intent) {
     case PCPacketIntent::TURN_ON:
-        _on = true;
         PRINTLN("turn on");
+        _on = true;
         break;
     case PCPacketIntent::TURN_OFF:
-        _on = false;
         PRINTLN("turn off");
+        _on = false;
         break;
     case PCPacketIntent::POSE_UPDATE:
+        PRINTLN("pose update");
         // replace our own pose with the updated one
         _pose = pcPacket.pose;
         // apply historical odometry updates on top of this pose
@@ -255,6 +253,7 @@ void Robot::processPCPacket(const PCPacketData& pcPacket) {
         }
         break;
     case PCPacketIntent::POSE_PING:
+        PRINTLN("pose ping");
         // don't do anything
         break;
     default:

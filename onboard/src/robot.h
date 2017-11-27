@@ -31,6 +31,8 @@ class Robot {
     // communication
     static constexpr auto MAX_NUM_POSE_UPDATES = 10;
 
+    enum GetCubeState { SEARCH, DRIVE_FWD, CLOSING, RAISING, NUM_STATES };
+
   public:
     /**
      * @brief Minimum time [ms] between the start of
@@ -142,6 +144,9 @@ class Robot {
 
     // navigation
     coord_t _lastDistToTarget;
+
+    // cube
+    GetCubeState _getCubeState;
 
     // behaviour state
     WallTurn _wallTurn;
