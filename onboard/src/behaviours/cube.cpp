@@ -59,8 +59,7 @@ void Robot::computeGetCube() {
         PRINTLN("Search left...");
         // Turn to the left.
         ctrl.heading = -CUBE_PICKUP_TURN_SPEED;
-        if (myfabs(headingDifference(_getCubeTurnStartPose, _pose)) >
-                   M_PI_4) {
+        if (myfabs(headingDifference(_getCubeTurnStartPose, _pose)) > M_PI_4) {
             // Finished turning 45 degrees.
             _getCubeTurnStartPose = _pose;
             _numConsecutiveBlockSightings = 0;
@@ -72,6 +71,7 @@ void Robot::computeGetCube() {
         if (irDistanceLow > MAX_IR_RANGEFINDER_DISTANCE
             // || irDistanceHigh > MAX_IR_RANGEFINDER_DISTANCE
             ) {
+            _numConsecutiveBlockSightings = 0;
             break;
         }
         if (irDisparity > BLOCK_MIN_DISPARITY) {
@@ -92,8 +92,7 @@ void Robot::computeGetCube() {
         PRINTLN("Search right...");
         // Turn to the right.
         ctrl.heading = CUBE_PICKUP_TURN_SPEED;
-        if (myfabs(headingDifference(_getCubeTurnStartPose, _pose)) >
-                   M_PI_2) {
+        if (myfabs(headingDifference(_getCubeTurnStartPose, _pose)) > M_PI_2) {
             // Finished turning 90 degrees.
             _getCubeTurnStartPose = _pose;
             _numConsecutiveBlockSightings = 0;
@@ -105,6 +104,7 @@ void Robot::computeGetCube() {
         if (irDistanceLow > MAX_IR_RANGEFINDER_DISTANCE
             // || irDistanceHigh > MAX_IR_RANGEFINDER_DISTANCE
             ) {
+            _numConsecutiveBlockSightings = 0;
             break;
         }
         if (irDisparity > BLOCK_MIN_DISPARITY) {
@@ -137,15 +137,17 @@ void Robot::computeGetCube() {
         }
         break;
     case FINAL_FORWARD:
-        // Drive forward for a short distance to make sure we have acquired the block.
+        // Drive forward for a short distance to make sure we have acquired the
+        // block.
         PRINTLN("Final forward sequence.");
         ctrl.speed = CUBE_PICKUP_FORWARD_SPEED;
         // Moved forward a little bit. Transition to claw closing state.
-        if (distance(_cubePickupFinalForwardStartPose, _pose) >= REQUIRED_CUBE_PICKUP_FINAL_FORWARD_DISTANCE) {
+        if (distance(_cubePickupFinalForwardStartPose, _pose) >=
+            REQUIRED_CUBE_PICKUP_FINAL_FORWARD_DISTANCE) {
             _getCubeState = CLOSING;
             _processBehaviours = true;
         }
-    break;
+        break;
     case CLOSING:
         PRINTLN("Closing!");
         // Close the claw.
@@ -187,8 +189,8 @@ void Robot::computePutCube() {
 
     switch (_putCubeState) {
     case LOWERING:
-        _armPosition -= ARM_SPEED;
-        if (_armPosition <= ARM_DOWN) {
+        _armPosition += ARM_SPEED;
+        if (_armPosition >= ARM_DOWN) {
             _putCubeState = OPENING;
         }
         break;
