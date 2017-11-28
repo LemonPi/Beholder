@@ -29,6 +29,10 @@ void Robot::turnOn() {
     // Init Servo objects.
     _clawServo.attach(CLAW_PIN);
     _armServo.attach(ARM_PIN);
+
+    // initialize to sane positions (avoid high turning radius)
+    _clawServo.write(CLAW_OPENED + 5);
+    _armServo.write(ARM_DOWN);
 }
 
 void Robot::turnOff() {
@@ -274,6 +278,10 @@ void Robot::processPCPacket(const PCPacketData& pcPacket) {
     case PCPacketIntent::POSE_PING:
         PRINTLN("pose ping");
         // don't do anything
+        break;
+    case PCPacketIntent::CLEAR_TARGETS:
+        PRINTLN("clear targets");
+        _targets.clear();
         break;
     default:
         // some other command
