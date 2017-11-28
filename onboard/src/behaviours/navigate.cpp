@@ -57,7 +57,7 @@ void Robot::computeNavigate() {
         if (target.hasTargetHeading() &&
             myfabs(headingDiff) > HEADING_THRESHOLD) {
             _behaviours[BehaviourId::TURN_IN_PLACE].active = true;
-            ++_processBehaviours;
+            _processBehaviours = true;
             PRINTLN("turn to desired");
         } else {
             // done with target
@@ -70,7 +70,7 @@ void Robot::computeNavigate() {
         _behaviours[BehaviourId::TURN_IN_PLACE].active = true;
         pushTarget(Target(_pose.x, _pose.y, _pose.heading + headingToTarget,
                           Target::TURN_IN_PLACE));
-        ++_processBehaviours;
+        _processBehaviours = true;
         PRINTLN("turn to face");
     }
 
