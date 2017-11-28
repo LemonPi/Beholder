@@ -4,6 +4,10 @@
 #include "network.h"
 #include "debug.h"
 
+Pose::Pose(coord_t x, coord_t y, heading_t h)
+    : x(x), y(y), heading(wrapHeading(h)) {
+}
+
 void Pose::deserializeObj(const uint8_t* const buffer, uint8_t& index) {
     deserialize(buffer, index, x);
     deserialize(buffer, index, y);
