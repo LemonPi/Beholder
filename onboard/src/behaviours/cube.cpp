@@ -74,7 +74,11 @@ void Robot::computeGetCube() {
                 _getCubeState = DRIVE_FWD;
                 _processBehaviours = true;
             }
-        } else if (myfabs(headingDifference(_getCubeTurnStartPose, _pose)) >
+            break;
+        } else {
+            _numConsecutiveBlockSightings = 0;
+        }
+        if (myfabs(headingDifference(_getCubeTurnStartPose, _pose)) >
                    M_PI_4) {
             // Finished turning 45 degrees.
             _getCubeTurnStartPose = _pose;
@@ -102,7 +106,11 @@ void Robot::computeGetCube() {
                 _getCubeState = DRIVE_FWD;
                 _processBehaviours = true;
             }
-        } else if (myfabs(headingDifference(_getCubeTurnStartPose, _pose)) >
+            break;
+        } else {
+            _numConsecutiveBlockSightings = 0;
+        }
+        if (myfabs(headingDifference(_getCubeTurnStartPose, _pose)) >
                    M_PI_2) {
             // Finished turning 90 degrees.
             _getCubeTurnStartPose = _pose;
