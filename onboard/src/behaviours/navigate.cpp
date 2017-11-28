@@ -9,7 +9,7 @@ constexpr auto TARGET_STOP_IMMEDIATE = 10;
 constexpr auto TARGET_STOP_IF_DIVERGING = 20;
 
 // stop if we're within this of target heading [rad]
-constexpr heading_t HEADING_THRESHOLD = Robot::HEADING_RES;
+constexpr heading_t HEADING_THRESHOLD = Robot::HEADING_RES * 1.4;
 
 // heading to target larger than this means we should turn in place first to
 // face target [rad]
@@ -31,6 +31,9 @@ constexpr auto MIN_TURN_SPEED = 80;
 constexpr auto WALL_AVOID_BEGIN_AT = 170;
 // how much PWM to supply to heading per mm too close
 constexpr auto WALL_AVOID_PWM_PER_MM = 1;
+
+constexpr auto TURN_IN_PLACE_WALL_BACK_UP_BEGIN_AT = 130;
+constexpr auto TURN_BACKUP_PWM_PER_MM = 0.3;
 
 void Robot::computeNavigate() {
     auto& ctrl = _behaviours[BehaviourId::NAVIGATE];
@@ -153,6 +156,12 @@ void Robot::computeTurnInPlace() {
 
     // turn in place with no translational velocity
     ctrl.speed = 0;
+    // need to go backwards if we're too close to a wall
+    const auto frontWallDist = Sonars::getReading(Sonars::FRONT);
+    if (frontWallDist < TURN_IN_PLACE_WALL_BACK_UP_BEGIN_AT) {
+        ctrl.speed -= (TURN_IN_PLACE_WALL_BACK_UP_BEGIN_AT - frontWallDist) *
+                      TURN_BACKUP_PWM_PER_MM;
+    }
 
     const auto toTurn = headingDifference(_targets.last(), _pose);
 
