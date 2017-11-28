@@ -5,13 +5,13 @@
 
 #ifndef NDEBUG
 #define PRINT(x)                                                               \
-    { Serial.print(x); }
+    { Serial3.print(x); }
 #define PRINTLN(x)                                                             \
-    { Serial.println(x); }
+    { Serial3.println(x); }
 #define ERROR(x)                                                               \
     {                                                                          \
-        Serial.print("ERR ");                                                  \
-        Serial.println(x);                                                     \
+        Serial3.print("ERR ");                                                 \
+        Serial3.println(x);                                                    \
     }
 #else
 #define PRINT(x) ;

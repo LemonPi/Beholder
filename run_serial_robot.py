@@ -66,6 +66,9 @@ def serial_reader(spec, positions, headings, readings):
             # Wait for start character
             if (char_in == b'\xa1'):
                 break
+            # otherwise not in the middle of the packet and we can assume it's debugging
+            else :
+                print(chr(char_in[0]), end='')
         
         # Read packet
         packet_time = time.time()
