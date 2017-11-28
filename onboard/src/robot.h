@@ -52,12 +52,12 @@ class Robot {
     /**
      * @brief Distance from block at which to close the claw. [mm]
      */
-    static constexpr auto BLOCK_MIN_DISTANCE = 1;
+    static constexpr auto BLOCK_MIN_DISTANCE = 50;
     /**
      * @brief Required number of consecutive logic cycles we have to see the
      * block.
      */
-    static constexpr auto REQUIRED_NUM_CONSECUTIVE_BLOCK_SIGHTINGS = 3;
+    static constexpr auto REQUIRED_NUM_CONSECUTIVE_BLOCK_SIGHTINGS = 1;
 
     enum GetCubeState {
         START,
@@ -103,8 +103,8 @@ class Robot {
 
     // Servo positions.
     static constexpr int ARM_DOWN = 170;
-    static constexpr int ARM_SEARCH_POSITION = ARM_DOWN - 10;
-    static constexpr int ARM_UP = 75 + 50; // Accomodating for IR rangefinder.
+    static constexpr int ARM_SEARCH_POSITION = ARM_DOWN + 5;
+    static constexpr int ARM_UP = 75 + 30; // Accomodating for IR rangefinder.
     static constexpr int CLAW_CLOSED = 35;
     static constexpr int CLAW_OPENED = 150; // 120
 

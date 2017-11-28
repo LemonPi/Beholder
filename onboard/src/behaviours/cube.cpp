@@ -59,25 +59,6 @@ void Robot::computeGetCube() {
         PRINTLN("Search left...");
         // Turn to the left.
         ctrl.heading = -CUBE_PICKUP_TURN_SPEED;
-        // Give up on bad readings. Our sensor is only rated to 15 cm.
-        if (irDistanceLow > MAX_IR_RANGEFINDER_DISTANCE
-            // || irDistanceHigh > MAX_IR_RANGEFINDER_DISTANCE
-            ) {
-            break;
-        }
-        if (irDisparity > BLOCK_MIN_DISPARITY) {
-            _numConsecutiveBlockSightings++;
-            PRINTLN("Saw block!");
-            if (_numConsecutiveBlockSightings >
-                REQUIRED_NUM_CONSECUTIVE_BLOCK_SIGHTINGS) {
-                PRINTLN("Found block!");
-                _getCubeState = DRIVE_FWD;
-                _processBehaviours = true;
-            }
-            break;
-        } else {
-            _numConsecutiveBlockSightings = 0;
-        }
         if (myfabs(headingDifference(_getCubeTurnStartPose, _pose)) >
                    M_PI_4) {
             // Finished turning 45 degrees.
@@ -85,12 +66,8 @@ void Robot::computeGetCube() {
             _numConsecutiveBlockSightings = 0;
             _getCubeState = SEARCH_RIGHT;
             _processBehaviours = true;
+            break;
         }
-        break;
-    case SEARCH_RIGHT:
-        PRINTLN("Search right...");
-        // Turn to the right.
-        ctrl.heading = CUBE_PICKUP_TURN_SPEED;
         // Give up on bad readings. Our sensor is only rated to 15 cm.
         if (irDistanceLow > MAX_IR_RANGEFINDER_DISTANCE
             // || irDistanceHigh > MAX_IR_RANGEFINDER_DISTANCE
@@ -110,6 +87,11 @@ void Robot::computeGetCube() {
         } else {
             _numConsecutiveBlockSightings = 0;
         }
+        break;
+    case SEARCH_RIGHT:
+        PRINTLN("Search right...");
+        // Turn to the right.
+        ctrl.heading = CUBE_PICKUP_TURN_SPEED;
         if (myfabs(headingDifference(_getCubeTurnStartPose, _pose)) >
                    M_PI_2) {
             // Finished turning 90 degrees.
@@ -117,6 +99,26 @@ void Robot::computeGetCube() {
             _numConsecutiveBlockSightings = 0;
             _getCubeState = SEARCH_LEFT;
             _processBehaviours = true;
+            break;
+        }
+        // Give up on bad readings. Our sensor is only rated to 15 cm.
+        if (irDistanceLow > MAX_IR_RANGEFINDER_DISTANCE
+            // || irDistanceHigh > MAX_IR_RANGEFINDER_DISTANCE
+            ) {
+            break;
+        }
+        if (irDisparity > BLOCK_MIN_DISPARITY) {
+            _numConsecutiveBlockSightings++;
+            PRINTLN("Saw block!");
+            if (_numConsecutiveBlockSightings >
+                REQUIRED_NUM_CONSECUTIVE_BLOCK_SIGHTINGS) {
+                PRINTLN("Found block!");
+                _getCubeState = DRIVE_FWD;
+                _processBehaviours = true;
+            }
+            break;
+        } else {
+            _numConsecutiveBlockSightings = 0;
         }
         break;
     case DRIVE_FWD:
@@ -145,8 +147,9 @@ void Robot::computeGetCube() {
     case RAISING:
         PRINTLN("Raising.");
         // Raise the arm.
-        _armPosition += ARM_SPEED;
-        if (_armPosition >= ARM_UP) {
+        _armPosition -= ARM_SPEED;
+        if (_armPosition <= ARM_UP) {
+            PRINTLN("D Raising");
             // Done.
             ctrl.active = false;
             _processBehaviours = true;
