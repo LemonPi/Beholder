@@ -27,6 +27,11 @@ constexpr auto MAX_NAV_SPEED = 180 * Robot::SPEED_SCALE;
 constexpr auto MIN_NAV_SPEED = 80;
 constexpr auto MIN_TURN_SPEED = 80;
 
+// consider avoiding a wall when its this close [mm]
+constexpr auto WALL_AVOID_BEGIN_AT = 170;
+// how much PWM to supply to heading per mm too close
+constexpr auto WALL_AVOID_PWM_PER_MM = 1;
+
 void Robot::computeNavigate() {
     auto& ctrl = _behaviours[BehaviourId::NAVIGATE];
     // only active if we have a target to get to
@@ -46,6 +51,8 @@ void Robot::computeNavigate() {
 
     const auto distToTarget = distance(target, _pose);
     const auto headingToTarget = headingToPoint(_pose, target);
+
+    // TODO stop if we're close enough but there's a wall too close in front
 
     // check if we're close enough to target
     if (distToTarget < TARGET_STOP_IMMEDIATE ||
@@ -76,10 +83,34 @@ void Robot::computeNavigate() {
 
     // normal navigation
     else {
-        // TODO add soft sonar wall avoidance
+        BehaviourControl ctrlAvoid;
+        const auto leftWallDist = Sonars::getReading(Sonars::LEFT);
+        const auto rightWallDist = Sonars::getReading(Sonars::RIGHT);
+        // control mixing with normal navigation
+        float avoidanceWeight = 0;
+        // try to stay in the middle
+        if (leftWallDist < WALL_AVOID_BEGIN_AT) {
+            ctrlAvoid.heading -=
+                (WALL_AVOID_BEGIN_AT - leftWallDist) * WALL_AVOID_PWM_PER_MM;
+        }
+        if (rightWallDist < WALL_AVOID_BEGIN_AT) {
+            ctrlAvoid.heading +=
+                (WALL_AVOID_BEGIN_AT - rightWallDist) * WALL_AVOID_PWM_PER_MM;
+        }
+
+        // avoidance weight is a function of the min side distance
+        const auto minSideDist = min(leftWallDist, rightWallDist);
+        if (minSideDist < WALL_AVOID_BEGIN_AT) {
+            // 0 when minSideDist == begin dist; 1 when minSideDist == 1
+            avoidanceWeight =
+                (WALL_AVOID_BEGIN_AT - minSideDist) / WALL_AVOID_BEGIN_AT;
+        }
 
         // proportional control for heading
         ctrl.heading = headingToTarget * TURN_PER_RAD_PWM;
+
+        // TODO softly mix avoidance and navigation
+
         if (distToTarget > MAX_SPEED_BEYOND) {
             ctrl.speed = MAX_NAV_SPEED;
         } else {
