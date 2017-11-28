@@ -58,12 +58,17 @@ class Robot {
      * block.
      */
     static constexpr auto REQUIRED_NUM_CONSECUTIVE_BLOCK_SIGHTINGS = 1;
+    /**
+     * @brief Distance to drive forward in the final block pickup sequence. [mm]
+     */
+    static constexpr auto REQUIRED_CUBE_PICKUP_FINAL_FORWARD_DISTANCE = 20;
 
     enum GetCubeState {
         START,
         SEARCH_LEFT,
         SEARCH_RIGHT,
-        DRIVE_FWD,
+        DRIVE_FORWARD,
+        FINAL_FORWARD,
         CLOSING,
         RAISING,
         GET_CUBE_NUM_STATES
@@ -108,8 +113,8 @@ class Robot {
     static constexpr int CLAW_CLOSED = 35;
     static constexpr int CLAW_OPENED = 150; // 120
 
-    static constexpr int ARM_SPEED = 5;
-    static constexpr int CLAW_SPEED = 5;
+    static constexpr int ARM_SPEED = 10;
+    static constexpr int CLAW_SPEED = 10;
 
     // behaviour layers ordered in increasing priority
     enum BehaviourId {
@@ -223,6 +228,7 @@ class Robot {
     Pose _getCubeTurnStartPose;
     PutCubeState _putCubeState;
     int _numConsecutiveBlockSightings;
+    Pose _cubePickupFinalForwardStartPose;
 
     // behaviour state
     WallTurn _wallTurn;
