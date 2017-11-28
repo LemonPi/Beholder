@@ -9,7 +9,7 @@
 Robot::Robot(MotorController leftMc, MotorController rightMc, Pose initialPose)
     : _on(false), _lastRunTime(0U), _pose(initialPose), _leftMc(leftMc),
       _rightMc(rightMc), _turnInPlaceState(TurnInPlaceState::INACTIVE),
-      _getCubeState(START), _putCubeState(LOWERING) {
+      _getCubeState(START), _putCubeState(LOWERING), _converged(false) {
 
     // by default all behaviours are allowed
     for (int b = 0; b < BehaviourId::NUM_BEHAVIOURS; ++b) {
@@ -27,7 +27,8 @@ void Robot::turnOn() {
     _on = true;
     _wallFollow.followOn();
 
-    _behaviours[BehaviourId::GET_CUBE].active = true;
+    // debug getting cube behaviour
+    //    _behaviours[BehaviourId::GET_CUBE].active = true;
 
     // Init Servo objects.
     _clawServo.attach(CLAW_PIN);
@@ -52,11 +53,9 @@ void Robot::setBehaviour(BehaviourId behaviourId, bool enable) {
 void Robot::pushTarget(Target t) {
     // push to the back so it's most urgent (stack)
     _targets.push(t);
-    _behaviours[BehaviourId::NAVIGATE].active = true;
 }
 void Robot::unshiftTarget(Target t) {
     _targets.unshift(t);
-    _behaviours[BehaviourId::NAVIGATE].active = true;
 }
 
 void Robot::processOdometry() {
@@ -134,6 +133,29 @@ bool Robot::run() {
     // we get per cycle
     processOdometry();
 
+    // almost close to
+    // 7.5, 3.5 (drop off)
+    // 0.5, 0.5 (pick up)
+    constexpr auto MM_PER_FEET = 304.8;
+    const auto pickUpPose = Pose{0.5 * MM_PER_FEET, 0.5 * MM_PER_FEET, 0};
+    const auto dropOffPose = Pose{7.5 * MM_PER_FEET, 3.5 * MM_PER_FEET, 0};
+
+    constexpr auto CLOSE_ENOUGH_TO_POSE = MM_PER_FEET * 0.5;
+
+    static bool _gotBlock = false;
+    static bool _putBlock = false;
+
+    if (_converged && _gotBlock == false &&
+        distance(pickUpPose, _pose) < CLOSE_ENOUGH_TO_POSE) {
+        _gotBlock = true;
+        _behaviours[BehaviourId::GET_CUBE].active = true;
+    }
+    if (_converged && _putBlock == false &&
+        distance(dropOffPose, _pose) < CLOSE_ENOUGH_TO_POSE) {
+        _putBlock = true;
+        _behaviours[BehaviourId::PUT_CUBE].active = true;
+    }
+
     _processBehaviours = true;
 
     while (_processBehaviours) {
@@ -184,9 +206,9 @@ bool Robot::run() {
     // only assign it if we're sure this run was successful
     _lastRunTime = now;
 
-    // PRINT(_activeBehaviourId);
-    // PRINT(" ");
-    // printPose(_pose);
+    PRINT(_activeBehaviourId);
+    PRINT(" ");
+    printPose(_pose);
 
     return true;
 }
@@ -216,11 +238,11 @@ void Robot::controlMotors(const BehaviourControl& control) {
     }
 
     // debugging
-    //    PRINT(_activeBehaviourId);
-    //    PRINT(" L: ");
-    //    PRINT(_leftMc.getVelocity());
-    //    PRINT(" R: ");
-    //    PRINTLN(_rightMc.getVelocity());
+    PRINT(_activeBehaviourId);
+    PRINT(" L: ");
+    PRINT(_leftMc.getVelocity());
+    PRINT(" R: ");
+    PRINTLN(_rightMc.getVelocity());
 }
 
 void Robot::processNextTarget(BehaviourId behaviourCompleted) {
@@ -254,14 +276,15 @@ void Robot::processPCPacket(const PCPacketData& pcPacket) {
     switch (pcPacket.intent) {
     case PCPacketIntent::TURN_ON:
         PRINTLN("turn on");
-        _on = true;
+        turnOn();
         break;
     case PCPacketIntent::TURN_OFF:
         PRINTLN("turn off");
-        _on = false;
+        turnOff();
         break;
     case PCPacketIntent::POSE_UPDATE:
         PRINTLN("pose update");
+        _converged = true;
         // replace our own pose with the updated one
         _pose = pcPacket.pose;
 
@@ -287,6 +310,18 @@ void Robot::processPCPacket(const PCPacketData& pcPacket) {
     case PCPacketIntent::CLEAR_TARGETS:
         PRINTLN("clear targets");
         _targets.clear();
+        break;
+    case PCPacketIntent::MANUAL_GET_CUBE:
+        PRINTLN("manual get");
+        _behaviours[BehaviourId::GET_CUBE].active = true;
+        _getCubeState = CLOSING;
+        _clawPosition = CLAW_OPENED;
+        _armPosition = ARM_DOWN;
+        break;
+    case PCPacketIntent::MANUAL_PUT_CUBE:
+        PRINTLN("manual put");
+        _behaviours[BehaviourId::PUT_CUBE].active = true;
+        _putCubeState = LOWERING;
         break;
     default:
         // some other command

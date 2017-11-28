@@ -24,6 +24,8 @@ constexpr pc_packet_intent_t TURN_OFF = 251;
 constexpr pc_packet_intent_t POSE_UPDATE = 252;
 constexpr pc_packet_intent_t POSE_PING = 253;
 constexpr pc_packet_intent_t CLEAR_TARGETS = 254;
+constexpr pc_packet_intent_t MANUAL_GET_CUBE = 255;
+constexpr pc_packet_intent_t MANUAL_PUT_CUBE = 249;
 }
 
 struct PCPacketData {

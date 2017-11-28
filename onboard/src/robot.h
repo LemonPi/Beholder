@@ -53,7 +53,7 @@ class Robot {
     /**
      * @brief Distance from block at which to close the claw. [mm]
      */
-    static constexpr auto BLOCK_MIN_DISTANCE = 50;
+    static constexpr auto BLOCK_MIN_DISTANCE = 55;
     /**
      * @brief Required number of consecutive logic cycles we have to see the
      * block.
@@ -104,13 +104,13 @@ class Robot {
 
     // Speeds for cube pickup.
     static constexpr auto CUBE_PICKUP_TURN_SPEED =
-        SPEED_SCALE * 0.25 * MOTOR_PWM_MAX;
+        SPEED_SCALE * 0.3 * MOTOR_PWM_MAX;
     static constexpr auto CUBE_PICKUP_FORWARD_SPEED =
         SPEED_SCALE * 0.5 * MOTOR_PWM_MAX;
 
     // Servo positions.
     static constexpr int ARM_DOWN = 170;
-    static constexpr int ARM_SEARCH_POSITION = ARM_DOWN + 5;
+    static constexpr int ARM_SEARCH_POSITION = ARM_DOWN + 5 - 20;
     static constexpr int ARM_UP = 75 + 30; // Accomodating for IR rangefinder.
     static constexpr int CLAW_CLOSED = 35;
     static constexpr int CLAW_OPENED = 140; // 120
@@ -236,6 +236,8 @@ class Robot {
     // behaviour state
     WallTurn _wallTurn;
     WallFollow _wallFollow;
+
+    bool _converged;
 
     // target bookkeeping
     CircularBuffer<Target, MAX_NUM_TARGETS> _targets;
