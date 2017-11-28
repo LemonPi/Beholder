@@ -3,6 +3,7 @@
 #include "pose.h"
 #include "network.h"
 #include "debug.h"
+#include "target.h"
 
 Pose::Pose(coord_t x, coord_t y, heading_t h)
     : x(x), y(y), heading(wrapHeading(h)) {
@@ -39,6 +40,11 @@ heading_t headingToPoint(const Pose& a, const Pose& b) {
 }
 
 heading_t wrapHeading(heading_t heading) {
+    // special value; keep it
+    if (myfabs(heading - Target::ANY_HEADING) < 100) {
+        return Target::ANY_HEADING;
+    }
+
     if (heading > PI) {
         heading -= 2 * PI;
     } else if (heading < -PI) {

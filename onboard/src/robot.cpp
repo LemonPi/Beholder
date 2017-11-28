@@ -279,21 +279,28 @@ void Robot::processPCPacket(const PCPacketData& pcPacket) {
         // some other command
         if (pcPacket.intent < PCPacketIntent::GROUP_OFFSET) {
             // add target
-            Target target;
-            target.type = static_cast<Target::Type>(pcPacket.intent);
-            target.x = pcPacket.pose.x;
-            target.y = pcPacket.pose.y;
-            target.heading = pcPacket.pose.heading;
+            const auto target =
+                Target(pcPacket.pose.x, pcPacket.pose.y, pcPacket.pose.heading,
+                       static_cast<Target::Type>(pcPacket.intent));
+            unshiftTarget(target);
+            PRINT("add target ");
+            PRINT(target.type);
+            PRINT(" ");
+            printPose(target);
         } else if (pcPacket.intent < 2 * PCPacketIntent::GROUP_OFFSET) {
             // enable this behaviour
             const auto behaviourId =
-                pcPacket.intent - 2 * PCPacketIntent::GROUP_OFFSET;
+                pcPacket.intent - PCPacketIntent::GROUP_OFFSET;
             _allowedBehaviours[behaviourId] = true;
+            PRINT("enable ");
+            PRINTLN(behaviourId);
         } else if (pcPacket.intent < 3 * PCPacketIntent::GROUP_OFFSET) {
             // disable this behaviour
             const auto behaviourId =
-                pcPacket.intent - 3 * PCPacketIntent::GROUP_OFFSET;
+                pcPacket.intent - 2 * PCPacketIntent::GROUP_OFFSET;
             _allowedBehaviours[behaviourId] = false;
+            PRINT("disable ");
+            PRINTLN(behaviourId);
         }
         break;
     }
