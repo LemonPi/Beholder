@@ -59,28 +59,28 @@ void WallFollow::compute(BehaviourControl& ctrl) {
     // corner
     // if so, use the interior corner turn behaviour instead
     // can't follow if it's too far... Just drive straight a bit
-    if (leftDist > MAX_FOLLOW_DIST_MM && rightDist > MAX_FOLLOW_DIST_MM) {
+    if (rightDist > MAX_FOLLOW_DIST_MM) {
         ctrl.speed = WALL_FWD_PWM * 0.7;
         ctrl.heading = 0;
     } else {
-        if (leftDist < MAX_FOLLOW_DIST_MM) {
-            ctrl.heading -= ((int)leftDist - DESIRED_WALL_DIST_MM) * WALL_KP;
-        }
+        //        if (leftDist < MAX_FOLLOW_DIST_MM) {
+        //            ctrl.heading -= ((int)leftDist - DESIRED_WALL_DIST_MM) *
+        //            WALL_KP;
+        //        }
         if (rightDist < MAX_FOLLOW_DIST_MM) {
             ctrl.heading += ((int)rightDist - DESIRED_WALL_DIST_MM) * WALL_KP;
         }
         ctrl.speed = WALL_FWD_PWM - myfabs(ctrl.heading);
     }
-    ctrl.speed = 100;
 
-    PRINT("f");
-    PRINT(ctrl.speed);
-    PRINT(" ");
-    PRINT(leftDist);
-    PRINT(" ");
-    PRINT(rightDist);
-    PRINT(" ");
-    PRINTLN(ctrl.heading);
+    //    PRINT("f");
+    //    PRINT(ctrl.speed);
+    //    PRINT(" ");
+    //    PRINT(leftDist);
+    //    PRINT(" ");
+    //    PRINT(rightDist);
+    //    PRINT(" ");
+    //    PRINTLN(ctrl.heading);
     //    PRINT(_state);
     //    PRINT(" ");
     //    PRINTLN(_wallDistanceCurrent);

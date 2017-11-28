@@ -27,7 +27,10 @@ constexpr auto TURN_STOPPING_TOLERANCE = 5;
 // HACK: avoid doing nothing
 constexpr auto ROUNDS_ALLOWED_NO_READINGS = 2;
 
-WallTurn::WallTurn() : _turningInPlace(false) {
+// minimum distance between pose for valid turns [mm]
+constexpr auto MIN_DIST_BETWEEN_TURNS = 70;
+
+WallTurn::WallTurn() : _turningInPlace(false), _lastFrontDist(0) {
     reset();
 }
 
@@ -37,6 +40,9 @@ void WallTurn::reset() {
     // assuming this distance will never be read (safe assumption)
     _minSideDist = 1 << 10;
     _turnsWithNoSideReadings = 0;
+    _lastFrontDist = 0;
+    _lastRightDist = 0;
+    _postTurnPose = {0, 0, 0};
 }
 
 bool WallTurn::turningAwayFromWall() const {
@@ -62,11 +68,21 @@ void WallTurn::compute(BehaviourControl& ctrl, const Pose& robotPose) {
     // we also turn a right corner when we can for the right hand rule
     // don't break a turning away from wall if we're doing so
     // don't reset turning into wall if we're already
-    if (rightWallDist > WallFollow::MAX_FOLLOW_DIST_MM && _state == INACTIVE) {
+    // we never have to turn into way immediately after turning away from a wall
+    if (rightWallDist > WallFollow::MAX_FOLLOW_DIST_MM &&
+        _lastRightDist > WallFollow::MAX_FOLLOW_DIST_MM && _state == INACTIVE &&
+        ((_postTurnPose.x == 0 && _postTurnPose.y == 0 &&
+          _postTurnPose.heading == 0) ||
+         (distance(_postTurnPose, robotPose) > MIN_DIST_BETWEEN_TURNS))) {
         ctrl.active = true;
         _state = PRE_TURN_INTO_WALL;
         _preTurnStartPose = robotPose;
         PRINTLN("[WT] start turn into wall");
+        PRINT(rightWallDist);
+        PRINT(" ");
+        PRINT(_state);
+        PRINT(" ");
+        PRINTLN(distance(_postTurnPose, robotPose));
     }
 
     // this check is after turning into a wall because it has priority
@@ -75,10 +91,14 @@ void WallTurn::compute(BehaviourControl& ctrl, const Pose& robotPose) {
     // can only start turning away if we have sides that can guide us
     // don't reset if we're already turning away from wall
     if (currentWallDist != 0 &&
-        currentWallDist <= START_TURN_WHEN_IN_FRONT_MM &&
+        currentWallDist <= START_TURN_WHEN_IN_FRONT_MM && _lastFrontDist != 0 &&
+        _lastFrontDist <= START_TURN_WHEN_IN_FRONT_MM &&
         noSideReadings == false && turningAwayFromWall() == false) {
         ctrl.active = true;
         _state = INIT_AWAY_TURN;
+        _preTurnStartPose = robotPose;
+        PRINT("turn away ");
+        PRINTLN(currentWallDist);
     }
 
     if (ctrl.active) {
@@ -88,7 +108,7 @@ void WallTurn::compute(BehaviourControl& ctrl, const Pose& robotPose) {
 
         // HACK: avoid doing nothing, remove when we add targets
         // TODO: only command this in states where side dist is important
-        if (noSideReadings) {
+        if (turningAwayFromWall() && noSideReadings) {
             // just keep sending our latest command
             return;
         }
@@ -98,6 +118,12 @@ void WallTurn::compute(BehaviourControl& ctrl, const Pose& robotPose) {
         // whether the state changed and requires recomputation using current
         // data
         bool recomputeState = false;
+
+        // turned too much (we always turn at most 90 deg at one step)
+        if (turningAwayFromWall() &&
+            myfabs(headingDifference(_preTurnStartPose, robotPose)) > HALF_PI) {
+            _state = State::JUST_PAST_PERPENDICULAR;
+        }
 
         do {
             const auto sideDist =
@@ -164,7 +190,7 @@ void WallTurn::compute(BehaviourControl& ctrl, const Pose& robotPose) {
                     // if it's not, then likely we didn't see corner
                     // we also expect just past perpendicular to be close to
                     // perpendicular
-                } else if (sideDist > _minSideDist + TURN_DEBOUNCE &&
+                } else if (sideDist > _minSideDist + 0.3 * TURN_DEBOUNCE &&
                            sideDist < _minSideDist + 3 * TURN_DEBOUNCE &&
                            _minSideDist + TURN_MIN_DIFF < _maxSideDist) {
                     _state = State::JUST_PAST_PERPENDICULAR;
@@ -181,6 +207,7 @@ void WallTurn::compute(BehaviourControl& ctrl, const Pose& robotPose) {
                 if (currentWallDist > START_TURN_WHEN_IN_FRONT_MM) {
                     ctrl.active = false;
                     _turningInPlace = false;
+                    _postTurnPose = robotPose;
                     PRINTLN("[WT] fin turn away");
                 }
                 break;
@@ -203,7 +230,7 @@ void WallTurn::compute(BehaviourControl& ctrl, const Pose& robotPose) {
                     headingDifference(robotPose, _preTurnStartPose);
 
                 // hard code 90 degree turn?
-                if (headingDiff > PI / 2) {
+                if (myfabs(headingDiff) > PI / 2) {
                     finishedTurning = true;
                     PRINTLN("[WT] turned into 90 deg");
                 }
@@ -221,6 +248,7 @@ void WallTurn::compute(BehaviourControl& ctrl, const Pose& robotPose) {
                     reset();
                     recomputeState = true;
                     ctrl.active = false;
+                    _postTurnPose = robotPose;
                     PRINTLN("[WT] finished turn into");
                 } else {
                     // pivot turn clockwise
@@ -233,13 +261,13 @@ void WallTurn::compute(BehaviourControl& ctrl, const Pose& robotPose) {
             }
         } while (recomputeState);
 
-        PRINT(_state);
-        PRINT(" ");
-        PRINT(_minSideDist);
-        PRINT(" ");
-        PRINT(_maxSideDist);
-        PRINT(" ");
-        PRINTLN(rightWallDist);
+        //        PRINT(_state);
+        //        PRINT(" ");
+        //        PRINT(_minSideDist);
+        //        PRINT(" ");
+        //        PRINT(_maxSideDist);
+        //        PRINT(" ");
+        //        PRINTLN(rightWallDist);
     }
 
     if (turningAwayFromWall()) {
@@ -259,6 +287,9 @@ void WallTurn::compute(BehaviourControl& ctrl, const Pose& robotPose) {
             }
         }
     }
+
+    _lastFrontDist = currentWallDist;
+    _lastRightDist = rightWallDist;
 }
 
 void inPlaceTurn(BehaviourControl& ctrl, int velocity) {

@@ -16,7 +16,7 @@ class WallFollow {
     static constexpr auto MAX_FOLLOW_DIST_MM = 250;
     // used for constant forward velocity
     static constexpr auto WALL_FWD_PWM = 170;
-    static constexpr auto DESIRED_WALL_DIST_MM = 80;
+    static constexpr auto DESIRED_WALL_DIST_MM = 82;
 
     WallFollow();
 

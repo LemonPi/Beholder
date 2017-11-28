@@ -8,7 +8,8 @@
 
 Robot::Robot(MotorController leftMc, MotorController rightMc, Pose initialPose)
     : _on(false), _lastRunTime(0U), _pose(initialPose), _leftMc(leftMc),
-      _rightMc(rightMc), _getCubeState(START), _putCubeState(LOWERING) {
+      _rightMc(rightMc), _turnInPlaceState(TurnInPlaceState::INACTIVE),
+      _getCubeState(START), _putCubeState(LOWERING) {
 
     // by default all behaviours are allowed
     for (int b = 0; b < BehaviourId::NUM_BEHAVIOURS; ++b) {

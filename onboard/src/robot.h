@@ -23,7 +23,8 @@ class Robot {
     /**
      * @brief Distance between the wheels [mm]
      */
-    static constexpr double BASE_LENGTH = 143.8 + 8.8;
+    //    static constexpr double BASE_LENGTH = 143.8 + 8.8;
+    static constexpr double BASE_LENGTH = 143.8 + 15;
 
     /**
      * @brief Distance [mm] from upper IR rangefinder to lower rangefinder,
@@ -74,6 +75,7 @@ class Robot {
         GET_CUBE_NUM_STATES
     };
     enum PutCubeState { LOWERING, OPENING, PUT_CUBE_NUM_STATES };
+    enum class TurnInPlaceState { INACTIVE, REVERSE, PIVOT, NUM_STATES };
 
   public:
     /**
@@ -111,7 +113,7 @@ class Robot {
     static constexpr int ARM_SEARCH_POSITION = ARM_DOWN + 5;
     static constexpr int ARM_UP = 75 + 30; // Accomodating for IR rangefinder.
     static constexpr int CLAW_CLOSED = 35;
-    static constexpr int CLAW_OPENED = 150; // 120
+    static constexpr int CLAW_OPENED = 140; // 120
 
     static constexpr int ARM_SPEED = 10;
     static constexpr int CLAW_SPEED = 10;
@@ -222,6 +224,7 @@ class Robot {
 
     // navigation
     coord_t _lastDistToTarget;
+    TurnInPlaceState _turnInPlaceState;
 
     // cube
     GetCubeState _getCubeState;
