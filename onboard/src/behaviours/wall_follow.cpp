@@ -70,6 +70,14 @@ void WallFollow::compute(BehaviourControl& ctrl) {
         if (rightDist < MAX_FOLLOW_DIST_MM) {
             ctrl.heading += ((int)rightDist - DESIRED_WALL_DIST_MM) * WALL_KP;
         }
+
+        //        if (rightDist < DESIRED_WALL_DIST_MM) {
+        //            ctrl.heading -= 20;
+        //        }
+        //        if (leftDist < DESIRED_WALL_DIST_MM) {
+        //            ctrl.heading += 20;
+        //        }
+
         ctrl.speed = WALL_FWD_PWM - myfabs(ctrl.heading);
     }
 

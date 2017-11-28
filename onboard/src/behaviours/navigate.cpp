@@ -3,10 +3,12 @@
 #include "../util.h"
 
 // distance from target from which we're close enough to stop immediately [mm]
-constexpr auto TARGET_STOP_IMMEDIATE = 10;
+constexpr auto TARGET_STOP_IMMEDIATE = 20;
 // distance from target from which we stop if our distance starts increasing
 // [mm]
-constexpr auto TARGET_STOP_IF_DIVERGING = 20;
+constexpr auto TARGET_STOP_IF_DIVERGING = 30;
+constexpr auto WALL_CLOSE_DIST = 140;
+constexpr auto TARGET_STOP_WALL_CLOSE = 70;
 
 // stop if we're within this of target heading [rad]
 constexpr heading_t HEADING_THRESHOLD = Robot::HEADING_RES * 1.4;
@@ -28,7 +30,7 @@ constexpr auto MIN_NAV_SPEED = 80;
 constexpr auto MIN_TURN_SPEED = 80;
 
 // consider avoiding a wall when its this close [mm]
-constexpr auto WALL_AVOID_BEGIN_AT = 170;
+constexpr auto WALL_AVOID_BEGIN_AT = 80;
 // how much PWM to supply to heading per mm too close
 constexpr auto WALL_AVOID_PWM_PER_MM = 1;
 
@@ -55,10 +57,10 @@ void Robot::computeNavigate() {
     const auto distToTarget = distance(target, _pose);
     const auto headingToTarget = headingToPoint(_pose, target);
 
-    // TODO stop if we're close enough but there's a wall too close in front
-
-    // check if we're close enough to target
-    if (distToTarget < TARGET_STOP_IMMEDIATE ||
+    // stop if we're close enough but there's a wall too close in front
+    if ((Sonars::getReading(Sonars::FRONT) < WALL_CLOSE_DIST) ||
+        // check if we're close enough to target
+        distToTarget < TARGET_STOP_IMMEDIATE ||
         (distToTarget < TARGET_STOP_IF_DIVERGING &&
          distToTarget > _lastDistToTarget)) {
         PRINTLN("close");
@@ -87,32 +89,55 @@ void Robot::computeNavigate() {
     // normal navigation
     else {
         BehaviourControl ctrlAvoid;
+        ctrlAvoid.speed = 0;
+        ctrlAvoid.heading = 0;
         const auto leftWallDist = Sonars::getReading(Sonars::LEFT);
         const auto rightWallDist = Sonars::getReading(Sonars::RIGHT);
-        // control mixing with normal navigation
-        float avoidanceWeight = 0;
-        // try to stay in the middle
-        if (leftWallDist < WALL_AVOID_BEGIN_AT) {
-            ctrlAvoid.heading -=
-                (WALL_AVOID_BEGIN_AT - leftWallDist) * WALL_AVOID_PWM_PER_MM;
-        }
-        if (rightWallDist < WALL_AVOID_BEGIN_AT) {
-            ctrlAvoid.heading +=
-                (WALL_AVOID_BEGIN_AT - rightWallDist) * WALL_AVOID_PWM_PER_MM;
-        }
+        //        // control mixing with normal navigation
+        //        float avoidanceWeight = 0;
+        //        // try to stay in the middle
+        //        if (leftWallDist < WALL_AVOID_BEGIN_AT) {
+        //            ctrlAvoid.heading -=
+        //                (WALL_AVOID_BEGIN_AT - leftWallDist) *
+        //                WALL_AVOID_PWM_PER_MM;
+        //        }
+        //        if (rightWallDist < WALL_AVOID_BEGIN_AT) {
+        //            ctrlAvoid.heading +=
+        //                (WALL_AVOID_BEGIN_AT - rightWallDist) *
+        //                WALL_AVOID_PWM_PER_MM;
+        //        }
 
-        // avoidance weight is a function of the min side distance
-        const auto minSideDist = min(leftWallDist, rightWallDist);
-        if (minSideDist < WALL_AVOID_BEGIN_AT) {
-            // 0 when minSideDist == begin dist; 1 when minSideDist == 1
-            avoidanceWeight =
-                (WALL_AVOID_BEGIN_AT - minSideDist) / WALL_AVOID_BEGIN_AT;
-        }
+        //        // avoidance weight is a function of the min side distance
+        //        const auto minSideDist = min(leftWallDist, rightWallDist);
+        //        if (minSideDist < WALL_AVOID_BEGIN_AT) {
+        //            // 0 when minSideDist == begin dist; 1 when minSideDist ==
+        //            1
+        //            avoidanceWeight =
+        //                (WALL_AVOID_BEGIN_AT - minSideDist) /
+        //                WALL_AVOID_BEGIN_AT;
+        //        }
 
         // proportional control for heading
         ctrl.heading = headingToTarget * TURN_PER_RAD_PWM;
 
-        // TODO softly mix avoidance and navigation
+        if (leftWallDist < WALL_AVOID_BEGIN_AT) {
+            ctrl.heading += 20;
+        }
+        if (rightWallDist < WALL_AVOID_BEGIN_AT) {
+            ctrl.heading -= 20;
+        }
+        //        if (leftWallDist < WALL_AVOID_BEGIN_AT) {
+        //            ctrl.heading +=
+        //                (WALL_AVOID_BEGIN_AT - leftWallDist) *
+        //                WALL_AVOID_PWM_PER_MM;
+        //        }
+        //        if (rightWallDist < WALL_AVOID_BEGIN_AT) {
+        //            ctrl.heading -=
+        //                (WALL_AVOID_BEGIN_AT - rightWallDist) *
+        //                WALL_AVOID_PWM_PER_MM;
+        //        }
+        //        ctrl.heading = ctrl.heading * (1 - avoidanceWeight) +
+        //                       ctrlAvoid.heading * avoidanceWeight;
 
         if (distToTarget > MAX_SPEED_BEYOND) {
             ctrl.speed = MAX_NAV_SPEED;
