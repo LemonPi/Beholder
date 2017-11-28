@@ -121,6 +121,11 @@ PCPacketData Network::getLatestPCPacket() {
     PCPacketData pcPacket;
     uint8_t deserializationIndex = 0;
     pcPacket.deserializeObj(_pcPacketBuf, deserializationIndex);
+
+    // adjust for coordinate differences
+    // our heading is relative to east (positive x)
+    // PC has heading relative to north
+    pcPacket.pose.heading = wrapHeading(pcPacket.pose.heading - HALF_PI);
     return pcPacket;
 }
 
