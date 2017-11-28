@@ -80,7 +80,7 @@ void Robot::computeGetCube() {
             if (_numConsecutiveBlockSightings >
                 REQUIRED_NUM_CONSECUTIVE_BLOCK_SIGHTINGS) {
                 PRINTLN("Found block!");
-                _getCubeState = DRIVE_FWD;
+                _getCubeState = DRIVE_FORWARD;
                 _processBehaviours = true;
             }
             break;
@@ -113,7 +113,7 @@ void Robot::computeGetCube() {
             if (_numConsecutiveBlockSightings >
                 REQUIRED_NUM_CONSECUTIVE_BLOCK_SIGHTINGS) {
                 PRINTLN("Found block!");
-                _getCubeState = DRIVE_FWD;
+                _getCubeState = DRIVE_FORWARD;
                 _processBehaviours = true;
             }
             break;
@@ -140,9 +140,8 @@ void Robot::computeGetCube() {
         // Drive forward for a short distance to make sure we have acquired the block.
         PRINTLN("Final forward sequence.");
         ctrl.speed = CUBE_PICKUP_FORWARD_SPEED;
-        _cubePickupFinalForwardCycles++;
         // Moved forward a little bit. Transition to claw closing state.
-        if (distance(_cubePickupFinalForwardStartPose, _pose) >= REQUIRED_CUBE_PICKUP_FINAL_FORWARD_CYCLES) {
+        if (distance(_cubePickupFinalForwardStartPose, _pose) >= REQUIRED_CUBE_PICKUP_FINAL_FORWARD_DISTANCE) {
             _getCubeState = CLOSING;
             _processBehaviours = true;
         }
