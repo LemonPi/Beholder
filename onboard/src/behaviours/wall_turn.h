@@ -34,7 +34,7 @@ class WallTurn {
     /**
      * @brief How far away from the wall we should start turning
      */
-    static constexpr auto START_TURN_WHEN_IN_FRONT_MM = 135;
+    static constexpr auto START_TURN_WHEN_IN_FRONT_MM = 157;
 
     WallTurn();
     void compute(BehaviourControl& ctrl, const Pose& robotPose);
@@ -59,6 +59,10 @@ class WallTurn {
     bool _turningInPlace;
 
     Pose _preTurnStartPose;
+    Pose _postTurnPose;
+
+    sonar_reading_t _lastFrontDist;
+    sonar_reading_t _lastRightDist;
 };
 
 #endif // WALL_TURN_H

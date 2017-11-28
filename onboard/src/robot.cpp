@@ -8,7 +8,8 @@
 
 Robot::Robot(MotorController leftMc, MotorController rightMc, Pose initialPose)
     : _on(false), _lastRunTime(0U), _pose(initialPose), _leftMc(leftMc),
-      _rightMc(rightMc), _getCubeState(START), _putCubeState(LOWERING) {
+      _rightMc(rightMc), _turnInPlaceState(TurnInPlaceState::INACTIVE),
+      _getCubeState(START), _putCubeState(LOWERING) {
 
     // by default all behaviours are allowed
     for (int b = 0; b < BehaviourId::NUM_BEHAVIOURS; ++b) {
@@ -25,6 +26,8 @@ Robot::Robot(MotorController leftMc, MotorController rightMc, Pose initialPose)
 void Robot::turnOn() {
     _on = true;
     _wallFollow.followOn();
+
+    _behaviours[BehaviourId::GET_CUBE].active = true;
 
     // Init Servo objects.
     _clawServo.attach(CLAW_PIN);
@@ -62,10 +65,10 @@ void Robot::processOdometry() {
     // clear so that if any ticks occur during execution they're not lost
     WheelEncoders::clear();
 
-    PRINT("t");
-    PRINT(leftTicks);
-    PRINT(" ");
-    PRINT(rightTicks);
+    // PRINT("t");
+    // PRINT(leftTicks);
+    // PRINT(" ");
+    // PRINT(rightTicks);
 
     if (leftTicks > MAX_TICK_PER_CYCLE) {
         leftTicks = 0;
@@ -179,9 +182,9 @@ bool Robot::run() {
     // only assign it if we're sure this run was successful
     _lastRunTime = now;
 
-    PRINT(_activeBehaviourId);
-    PRINT(" ");
-    printPose(_pose);
+    // PRINT(_activeBehaviourId);
+    // PRINT(" ");
+    // printPose(_pose);
 
     return true;
 }

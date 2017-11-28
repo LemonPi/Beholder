@@ -23,7 +23,8 @@ class Robot {
     /**
      * @brief Distance between the wheels [mm]
      */
-    static constexpr double BASE_LENGTH = 143.8 + 8.8;
+    //    static constexpr double BASE_LENGTH = 143.8 + 8.8;
+    static constexpr double BASE_LENGTH = 143.8 + 15;
 
     /**
      * @brief Distance [mm] from upper IR rangefinder to lower rangefinder,
@@ -52,23 +53,29 @@ class Robot {
     /**
      * @brief Distance from block at which to close the claw. [mm]
      */
-    static constexpr auto BLOCK_MIN_DISTANCE = 1;
+    static constexpr auto BLOCK_MIN_DISTANCE = 50;
     /**
      * @brief Required number of consecutive logic cycles we have to see the
      * block.
      */
-    static constexpr auto REQUIRED_NUM_CONSECUTIVE_BLOCK_SIGHTINGS = 3;
+    static constexpr auto REQUIRED_NUM_CONSECUTIVE_BLOCK_SIGHTINGS = 1;
+    /**
+     * @brief Distance to drive forward in the final block pickup sequence. [mm]
+     */
+    static constexpr auto REQUIRED_CUBE_PICKUP_FINAL_FORWARD_DISTANCE = 20;
 
     enum GetCubeState {
         START,
         SEARCH_LEFT,
         SEARCH_RIGHT,
-        DRIVE_FWD,
+        DRIVE_FORWARD,
+        FINAL_FORWARD,
         CLOSING,
         RAISING,
         GET_CUBE_NUM_STATES
     };
     enum PutCubeState { LOWERING, OPENING, PUT_CUBE_NUM_STATES };
+    enum class TurnInPlaceState { INACTIVE, REVERSE, PIVOT, NUM_STATES };
 
   public:
     /**
@@ -103,13 +110,13 @@ class Robot {
 
     // Servo positions.
     static constexpr int ARM_DOWN = 170;
-    static constexpr int ARM_SEARCH_POSITION = ARM_DOWN - 10;
-    static constexpr int ARM_UP = 75 + 50; // Accomodating for IR rangefinder.
+    static constexpr int ARM_SEARCH_POSITION = ARM_DOWN + 5;
+    static constexpr int ARM_UP = 75 + 30; // Accomodating for IR rangefinder.
     static constexpr int CLAW_CLOSED = 35;
-    static constexpr int CLAW_OPENED = 150; // 120
+    static constexpr int CLAW_OPENED = 140; // 120
 
-    static constexpr int ARM_SPEED = 5;
-    static constexpr int CLAW_SPEED = 5;
+    static constexpr int ARM_SPEED = 10;
+    static constexpr int CLAW_SPEED = 10;
 
     // behaviour layers ordered in increasing priority
     enum BehaviourId {
@@ -217,12 +224,14 @@ class Robot {
 
     // navigation
     coord_t _lastDistToTarget;
+    TurnInPlaceState _turnInPlaceState;
 
     // cube
     GetCubeState _getCubeState;
     Pose _getCubeTurnStartPose;
     PutCubeState _putCubeState;
     int _numConsecutiveBlockSightings;
+    Pose _cubePickupFinalForwardStartPose;
 
     // behaviour state
     WallTurn _wallTurn;

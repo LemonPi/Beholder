@@ -10,7 +10,7 @@
 constexpr heading_t HEADING_TOLERANCE = PI / 45;
 
 // max turning difference
-static constexpr auto WALL_FOLLOW_TURN_PWM = 100 * Robot::SPEED_SCALE;
+static constexpr auto WALL_FOLLOW_TURN_PWM = 70 * Robot::SPEED_SCALE;
 static constexpr auto TURN_PWM = 150 * Robot::SPEED_SCALE;
 
 constexpr auto NUM_ROUNDS_TOO_FAR_WAIT = 3;
@@ -39,21 +39,17 @@ void WallFollow::reset() {
 void WallFollow::compute(BehaviourControl& ctrl) {
     // always activate for now
     ctrl.active = true;
+    ctrl.speed = 0;
+    ctrl.heading = 0;
 
     // try to keep wall on right a certain distance away
     _wallDistanceSetpoint = DESIRED_WALL_DIST_MM;
-    _wallDistanceCurrent = Sonars::getReading(Sonars::RIGHT);
-
-    // erroneous reading / initializing
-    if (_wallDistanceCurrent == 0) {
-        ctrl.speed = 0;
-        ctrl.heading = 0;
-        ctrl.active = false;
-        return;
-    }
+    const auto rightDist = Sonars::getReading(Sonars::RIGHT);
+    const auto leftDist = Sonars::getReading(Sonars::LEFT);
 
     // don't drive if wall in front
-    if (Sonars::getReading(Sonars::FRONT) < 90) {
+    if (Sonars::getReading(Sonars::FRONT) < 100) {
+        PRINTLN("break follow");
         ctrl.active = false;
         return;
     }
@@ -62,17 +58,29 @@ void WallFollow::compute(BehaviourControl& ctrl) {
     // only enter our turning mode if there's no competing interior
     // corner
     // if so, use the interior corner turn behaviour instead
-
     // can't follow if it's too far... Just drive straight a bit
-    if (_wallDistanceCurrent > MAX_FOLLOW_DIST_MM) {
+    if (rightDist > MAX_FOLLOW_DIST_MM) {
         ctrl.speed = WALL_FWD_PWM * 0.7;
         ctrl.heading = 0;
     } else {
-        // own proportional controller
-        ctrl.heading = (_wallDistanceCurrent - _wallDistanceSetpoint) * WALL_KP;
+        //        if (leftDist < MAX_FOLLOW_DIST_MM) {
+        //            ctrl.heading -= ((int)leftDist - DESIRED_WALL_DIST_MM) *
+        //            WALL_KP;
+        //        }
+        if (rightDist < MAX_FOLLOW_DIST_MM) {
+            ctrl.heading += ((int)rightDist - DESIRED_WALL_DIST_MM) * WALL_KP;
+        }
         ctrl.speed = WALL_FWD_PWM - myfabs(ctrl.heading);
     }
 
+    //    PRINT("f");
+    //    PRINT(ctrl.speed);
+    //    PRINT(" ");
+    //    PRINT(leftDist);
+    //    PRINT(" ");
+    //    PRINT(rightDist);
+    //    PRINT(" ");
+    //    PRINTLN(ctrl.heading);
     //    PRINT(_state);
     //    PRINT(" ");
     //    PRINTLN(_wallDistanceCurrent);

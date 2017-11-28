@@ -43,14 +43,20 @@ void setup() {
     Sonars::setupPingTimers();
     WheelEncoders::setUp(LEFT_INTERRUPT_PIN, RIGHT_INTERRUPT_PIN);
 
-    robot.setBehaviour(Robot::BehaviourId::WALL_FOLLOW, false);
-    robot.setBehaviour(Robot::BehaviourId::TURN_IN_FRONT_OF_WALL, false);
-    robot.setBehaviour(Robot::BehaviourId::NAVIGATE, true);
-    robot.setBehaviour(Robot::BehaviourId::TURN_IN_PLACE, true);
+    //    robot.setBehaviour(Robot::BehaviourId::WALL_FOLLOW, false);
+    //    robot.setBehaviour(Robot::BehaviourId::TURN_IN_FRONT_OF_WALL, false);
+    robot.setBehaviour(Robot::BehaviourId::NAVIGATE, false);
+    robot.setBehaviour(Robot::BehaviourId::TURN_IN_PLACE, false);
+    robot.setBehaviour(Robot::BehaviourId::GET_CUBE, false);
+    robot.setBehaviour(Robot::BehaviourId::PUT_CUBE, false);
 
     // ------------- DEBUG target
-    robot.unshiftTarget(Target(100, 0, -PI / 2, Target::NAVIGATE));
-    robot.unshiftTarget(Target(100, 100, -PI / 2, Target::NAVIGATE));
+
+    //     initial turn in place 360 to try to converge
+    //    robot.unshiftTarget(Target(0, 0, PI / 2, Target::TURN_IN_PLACE));
+    //    robot.unshiftTarget(Target(0, 0, PI, Target::TURN_IN_PLACE));
+    //    robot.unshiftTarget(Target(0, 0, PI * 3 / 2, Target::TURN_IN_PLACE));
+    //    robot.unshiftTarget(Target(0, 0, PI * 2, Target::TURN_IN_PLACE));
 
     // wait for PC to turn it on
     robot.turnOn();

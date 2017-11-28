@@ -59,25 +59,6 @@ void Robot::computeGetCube() {
         PRINTLN("Search left...");
         // Turn to the left.
         ctrl.heading = -CUBE_PICKUP_TURN_SPEED;
-        // Give up on bad readings. Our sensor is only rated to 15 cm.
-        if (irDistanceLow > MAX_IR_RANGEFINDER_DISTANCE
-            // || irDistanceHigh > MAX_IR_RANGEFINDER_DISTANCE
-            ) {
-            break;
-        }
-        if (irDisparity > BLOCK_MIN_DISPARITY) {
-            _numConsecutiveBlockSightings++;
-            PRINTLN("Saw block!");
-            if (_numConsecutiveBlockSightings >
-                REQUIRED_NUM_CONSECUTIVE_BLOCK_SIGHTINGS) {
-                PRINTLN("Found block!");
-                _getCubeState = DRIVE_FWD;
-                _processBehaviours = true;
-            }
-            break;
-        } else {
-            _numConsecutiveBlockSightings = 0;
-        }
         if (myfabs(headingDifference(_getCubeTurnStartPose, _pose)) >
                    M_PI_4) {
             // Finished turning 45 degrees.
@@ -85,12 +66,8 @@ void Robot::computeGetCube() {
             _numConsecutiveBlockSightings = 0;
             _getCubeState = SEARCH_RIGHT;
             _processBehaviours = true;
+            break;
         }
-        break;
-    case SEARCH_RIGHT:
-        PRINTLN("Search right...");
-        // Turn to the right.
-        ctrl.heading = CUBE_PICKUP_TURN_SPEED;
         // Give up on bad readings. Our sensor is only rated to 15 cm.
         if (irDistanceLow > MAX_IR_RANGEFINDER_DISTANCE
             // || irDistanceHigh > MAX_IR_RANGEFINDER_DISTANCE
@@ -103,13 +80,18 @@ void Robot::computeGetCube() {
             if (_numConsecutiveBlockSightings >
                 REQUIRED_NUM_CONSECUTIVE_BLOCK_SIGHTINGS) {
                 PRINTLN("Found block!");
-                _getCubeState = DRIVE_FWD;
+                _getCubeState = DRIVE_FORWARD;
                 _processBehaviours = true;
             }
             break;
         } else {
             _numConsecutiveBlockSightings = 0;
         }
+        break;
+    case SEARCH_RIGHT:
+        PRINTLN("Search right...");
+        // Turn to the right.
+        ctrl.heading = CUBE_PICKUP_TURN_SPEED;
         if (myfabs(headingDifference(_getCubeTurnStartPose, _pose)) >
                    M_PI_2) {
             // Finished turning 90 degrees.
@@ -117,9 +99,29 @@ void Robot::computeGetCube() {
             _numConsecutiveBlockSightings = 0;
             _getCubeState = SEARCH_LEFT;
             _processBehaviours = true;
+            break;
+        }
+        // Give up on bad readings. Our sensor is only rated to 15 cm.
+        if (irDistanceLow > MAX_IR_RANGEFINDER_DISTANCE
+            // || irDistanceHigh > MAX_IR_RANGEFINDER_DISTANCE
+            ) {
+            break;
+        }
+        if (irDisparity > BLOCK_MIN_DISPARITY) {
+            _numConsecutiveBlockSightings++;
+            PRINTLN("Saw block!");
+            if (_numConsecutiveBlockSightings >
+                REQUIRED_NUM_CONSECUTIVE_BLOCK_SIGHTINGS) {
+                PRINTLN("Found block!");
+                _getCubeState = DRIVE_FORWARD;
+                _processBehaviours = true;
+            }
+            break;
+        } else {
+            _numConsecutiveBlockSightings = 0;
         }
         break;
-    case DRIVE_FWD:
+    case DRIVE_FORWARD:
         PRINTLN("Driving forward!");
         ctrl.speed = CUBE_PICKUP_FORWARD_SPEED;
         // Lost block. Return to searching.
@@ -129,10 +131,21 @@ void Robot::computeGetCube() {
         }
         // Arrived at block. Pick it up.
         if (irDistanceLow <= BLOCK_MIN_DISTANCE) {
-            _getCubeState = CLOSING;
+            _cubePickupFinalForwardStartPose = _pose;
+            _getCubeState = FINAL_FORWARD;
             _processBehaviours = true;
         }
         break;
+    case FINAL_FORWARD:
+        // Drive forward for a short distance to make sure we have acquired the block.
+        PRINTLN("Final forward sequence.");
+        ctrl.speed = CUBE_PICKUP_FORWARD_SPEED;
+        // Moved forward a little bit. Transition to claw closing state.
+        if (distance(_cubePickupFinalForwardStartPose, _pose) >= REQUIRED_CUBE_PICKUP_FINAL_FORWARD_DISTANCE) {
+            _getCubeState = CLOSING;
+            _processBehaviours = true;
+        }
+    break;
     case CLOSING:
         PRINTLN("Closing!");
         // Close the claw.
@@ -145,8 +158,9 @@ void Robot::computeGetCube() {
     case RAISING:
         PRINTLN("Raising.");
         // Raise the arm.
-        _armPosition += ARM_SPEED;
-        if (_armPosition >= ARM_UP) {
+        _armPosition -= ARM_SPEED;
+        if (_armPosition <= ARM_UP) {
+            PRINTLN("Acquired block!");
             // Done.
             ctrl.active = false;
             _processBehaviours = true;
