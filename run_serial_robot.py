@@ -15,9 +15,9 @@ from display import SimulatorWindow
 
 # ---- PARTICLE FILTER PARAMS
 N_PARTICLES = 250
-POS_SIGMA = 0.02
-H_SIGMA = 0.02
-UPDATE_EVERY = 30
+POS_SIGMA = 0.035
+H_SIGMA = 0.03
+UPDATE_EVERY = 25
 
 # ---- ROBOT SPEC
 # ------------------------------------------------------------
@@ -99,13 +99,17 @@ def send_packet(sock, packet):
     sock.send(packet)
 
 def enable_navigation_mode(sock, pose_packetizer):
-    packet = build_command_packet(pose_packetizer, Intents.DISABLE_WALL_FOLLOW)
-    send_packet(sock, packet)
+    for i in range(5):
+        packet = build_command_packet(pose_packetizer, Intents.DISABLE_WALL_FOLLOW)
+        send_packet(sock, packet)
+        time.sleep(0.1)
 
-    packet = build_command_packet(pose_packetizer, Intents.DISABLE_WALL_TURN)
-    send_packet(sock, packet)
+    for i in range(5):
+        packet = build_command_packet(pose_packetizer, Intents.DISABLE_WALL_TURN)
+        send_packet(sock, packet)
+        time.sleep(0.1)
 
-def bluetooth_reader(spec, shm_positions, shm_headings, shm_readings, flag):
+def bluetooth_reader(spec, shm_positions, shm_headings, shm_readings, flag, shm_state):
     sensor_packetizer = Packetizer("IffIIIB")
     pose_packetizer = Packetizer("fffIB")
     
@@ -162,6 +166,8 @@ def bluetooth_reader(spec, shm_positions, shm_headings, shm_readings, flag):
 
     # ---- START COMMUNICATIONS
 
+    # time.sleep(10)
+
     # Create a packet to send back to the robot
     send_packet(sock, START_PACKET)
 
@@ -182,26 +188,28 @@ def bluetooth_reader(spec, shm_positions, shm_headings, shm_readings, flag):
         if (flag.value == 2):
             send_packet(sock, STOP_PACKET)
             flag.value = 0
+        if (flag.value == 3):
+            update_num = 1
+            pf = ParticleFilter(N_PARTICLES, POS_SIGMA, H_SIGMA)
+            flag.value = 0
+        if (flag.value == 4):
+            send_packet(sock, build_command_packet(pose_packetizer, Intents.CLOSE_CLAW))
+            flag.value = 0
+        if (flag.value == 5):
+            send_packet(sock, build_command_packet(pose_packetizer, Intents.OPEN_CLAW))            
+            flag.value = 0
 
         # ---- READ PACKETS
         # ------------------------------------------------------------
         # Listen for packets from the robot
         char_in = b''
         try:
-            char_in = sock.recv(1)            
+            char_in = sock.recv(1)
         except bl.btcommon.BluetoothError as e:
             pass
         
-        # print(char_in, ord(char_in), char_in[0])
-        # Check the reset character
-        # if (char_in == b'\xa2'):
-        #     print('Resetting...')
-        #     # Reset the particle filter
-        #     update_num = 1
-        #     pf = ParticleFilter(N_PARTICLES, POS_SIGMA, H_SIGMA)
-        #     break
         # Wait for start character
-        if (char_in != ROBOT_PACKET_START_BYTE):
+        if (char_in != PacketCodes.ROBOT_PACKET_START):
             continue
 
         # Read packet
@@ -219,6 +227,7 @@ def bluetooth_reader(spec, shm_positions, shm_headings, shm_readings, flag):
         (seq_num, d, dh, sl, sf, sr, behaviour) = packet_contents
         readings = (sf, sr, sl)
         print(crc_correct, seq_num, behaviour, d, dh, readings, packet_time - last_packet)
+        shm_state.value = behaviour
 
         pf.update_particle_weights(robot_spec, [x/1000.0 for x in readings], world)
         pf.move_particles(d  / 1000.0, dh)        # Move the robot according to the encoder readings
@@ -235,31 +244,50 @@ def bluetooth_reader(spec, shm_positions, shm_headings, shm_readings, flag):
         com_pos, com_h, com_uncertainty, is_converged = pf.get_pose_estimate(convergence_radius=0.4)
 
         # TODO: Make robot go get block
-        if (nav.target is None): #and is_converged):            
+        if (nav.target is None and is_converged):
             print("Sending nav data")
-            nav.update(np.array([0.0, 0.0]), np.array([7.5, 3.5]) * Units.METERS_IN_A_FOOT)
-            
-            # Send waypoints
+            # packet = pose_packetizer.to_packet((0.5 * 1000.0 * Units.METERS_IN_A_FOOT, 0.5 * 1000.0 * Units.METERS_IN_A_FOOT, 0, 0, Intents.POSE_UPDATE))
+            # send_packet(sock, packet)
             send_packet(sock, STOP_PACKET)
+
+            nav.update(com_pos, np.array([0.5, 2.5]) * Units.METERS_IN_A_FOOT)
+            
+            pickup_loc = np.array([0.5, 1.7]) * Units.METERS_IN_A_FOOT
+            
+            end_loc = np.array([2.5, 2.5]) * Units.METERS_IN_A_FOOT
+
+            # Send waypoints
             send_packet(sock, CLEAR_PACKET)
             enable_navigation_mode(sock, pose_packetizer)
-            for p in nav.get_waypoints():
-                # TODO: Specify headings for the get and put targets.
+            for i,p in enumerate(nav.get_waypoints()):
+                # TODO: Specify headings for the get and put targets.                
                 data = (p[0,0] * 1000.0, p[1,0] * 1000.0, ANY_HEADING, 0, Intents.ADD_WAYPOINT)
                 packet = pose_packetizer.to_packet(data)
                 send_packet(sock, packet)
+                time.sleep(0.1)
+            
+            data = (pickup_loc[0] * 1000.0, pickup_loc[1] * 1000.0, 0.0, 0, Intents.GET_BLOCK)
+            packet = pose_packetizer.to_packet(data)
+            send_packet(sock, packet)
+            time.sleep(0.1)
+
+            data = (end_loc[0] * 1000.0, end_loc[1] * 1000.0, 0.0, 0, Intents.PUT_BLOCK)
+            packet = pose_packetizer.to_packet(data)
+            send_packet(sock, packet)
+            time.sleep(0.1)
+
             send_packet(sock, START_PACKET)
 
         # Create a packet to send back to the robot
-        intent = Intents.POSE_UPDATE if is_converged else Intents.POSE_PING
-        data = (float(com_pos[0]), float(com_pos[1]), float(com_h), seq_num, intent)
+        intent = Intents.POSE_UPDATE #if is_converged else Intents.POSE_PING
+        data = (float(com_pos[0]) * 1000, float(com_pos[1])  * 1000, float(com_h), seq_num, intent)        
         packet = pose_packetizer.to_packet(data)
-        send_packet(sock, packet)
+        # send_packet(sock, packet)
 
         # Update shared memory
         shm_positions[:] = list(pf.particle_pos.reshape(2*N_PARTICLES,))
         shm_headings[:] = list(pf.particle_h)
-        shm_readings[:] = [x/1000.0 for x in readings]
+        shm_readings[:] = [x / 1000.0 for x in readings]
 
         update_num += 1
         last_packet = packet_time
@@ -271,9 +299,10 @@ positions = mpc.Array('f', 2*N_PARTICLES)
 headings = mpc.Array('f', N_PARTICLES)
 readings = mpc.Array('f', len(robot_spec.sensors))
 flag = mpc.Value('I')
+state = mpc.Value('I')
 
 #p = mpc.Process(target=serial_reader, args=(robot_spec, positions, headings))
-p = mpc.Process(target=bluetooth_reader, args=(robot_spec, positions, headings, readings, flag))
+p = mpc.Process(target=bluetooth_reader, args=(robot_spec, positions, headings, readings, flag, state))
 p.start()
 # ------------------------------------------------------------
 
@@ -306,6 +335,13 @@ while not should_quit:
     if keys[pygame.K_p]:
         print("Turning off")
         flag.value = 2
+    if keys[pygame.K_r]:
+        print("Resetting particle filter")
+        flag.value = 3
+    if keys[pygame.K_q]:
+        flag.value = 4
+    if keys[pygame.K_w]:
+        flag.value = 5
 
     # Extract positions and headings
     particle_pos = np.array(positions[:]).reshape((2, N_PARTICLES))
@@ -329,6 +365,7 @@ while not should_quit:
     
     # Set the variables on the robot
     robot.localized = is_converged
+    robot.state = state.value
     robot.pos = np.reshape(com_pos, (2,1))
     robot.h = com_h
     robot.sensor_readings = readings[:]

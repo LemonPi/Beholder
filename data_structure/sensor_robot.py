@@ -16,13 +16,15 @@ class SensorRobot(Drawable):
         self.h = None
         self.sensor_readings = None
         self.localized = False
+        self.state = 0
     
     def draw(self, window):
         if(self.localized):
             pos_px = window.m_to_px(self.pos)
 
             # Robot
-            draw_triangle(window.screen, int(pos_px[0]), int(pos_px[1]), self.h, r=7, c=Colours.ROBOT_COLOUR, fill=True)
+            color = (0, 255, 0) if self.state == 5 else Colours.ROBOT_COLOUR 
+            draw_triangle(window.screen, int(pos_px[0]), int(pos_px[1]), self.h, r=7, c=color, fill=True)
 
             readings = self.sensor_readings[:]
             if readings:

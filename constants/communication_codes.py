@@ -7,6 +7,10 @@ class Intents(IntEnum):
     POSE_PING = 253
     CLEAR = 254
     ADD_WAYPOINT = 0
+    GET_BLOCK = 2
+    PUT_BLOCK = 3
+    CLOSE_CLAW = 255
+    OPEN_CLAW = 249
     ENABLE_WALL_FOLLOW = 31
     ENABLE_NAVIGATE = 32
     ENABLE_WALL_TURN = 33
