@@ -2,10 +2,14 @@
 #define POSE_H
 
 #include "types.h"
+#include "util.h"
 
 struct Pose {
     coord_t x, y;
     heading_t heading;
+
+    Pose() = default;
+    Pose(coord_t x, coord_t y, heading_t h);
 
     static constexpr auto SERIALIZED_SIZE =
         sizeof(coord_t) * 2 + sizeof(heading_t);
@@ -22,6 +26,8 @@ struct PoseUpdate {
 
     static constexpr auto SERIALIZED_SIZE = sizeof(coord_t) + sizeof(heading_t);
 };
+
+void printPose(const Pose& pose);
 
 /**
  * @brief Shortest path distance [mm] between two poses ignoring heading
@@ -48,7 +54,7 @@ heading_t headingToPoint(const Pose& a, const Pose& b);
 
 template <typename T>
 bool closeEnough(const T& a, const T& b, T epsilon) {
-    return abs(a - b) < epsilon;
+    return myfabs(a - b) < epsilon;
 }
 
 #endif // POSE_H

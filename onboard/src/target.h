@@ -23,6 +23,9 @@ struct Target : public Pose {
         NUM_TYPES
     };
 
+    Target() = default;
+    Target(coord_t x, coord_t y, heading_t h, Type t);
+
     Type type;
 
     static constexpr heading_t ANY_HEADING = 1000;

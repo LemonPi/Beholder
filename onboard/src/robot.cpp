@@ -8,8 +8,7 @@
 
 Robot::Robot(MotorController leftMc, MotorController rightMc, Pose initialPose)
     : _on(false), _lastRunTime(0U), _pose(initialPose), _leftMc(leftMc),
-      _rightMc(rightMc), _curTargetId(NO_TARGET), _getCubeState(START),
-      _putCubeState(LOWERING) {
+      _rightMc(rightMc), _getCubeState(START), _putCubeState(LOWERING) {
 
     // by default all behaviours are allowed
     for (int b = 0; b < BehaviourId::NUM_BEHAVIOURS; ++b) {
@@ -30,11 +29,17 @@ void Robot::turnOn() {
     // Init Servo objects.
     _clawServo.attach(CLAW_PIN);
     _armServo.attach(ARM_PIN);
+
+    // initialize to sane positions (avoid high turning radius)
+    _clawServo.write(CLAW_OPENED + 5);
+    _armServo.write(ARM_DOWN);
 }
 
 void Robot::turnOff() {
     _on = false;
     _wallFollow.followOff();
+    _leftMc.floatStop();
+    _rightMc.floatStop();
 }
 
 void Robot::setBehaviour(BehaviourId behaviourId, bool enable) {
@@ -42,19 +47,32 @@ void Robot::setBehaviour(BehaviourId behaviourId, bool enable) {
 }
 
 void Robot::pushTarget(Target t) {
-    // silently ignore if we're over the target limit
-    if (_curTargetId == MAX_NUM_TARGETS - 1) {
-        return;
-    }
-    _targets[++_curTargetId] = t;
+    // push to the back so it's most urgent (stack)
+    _targets.push(t);
+    _behaviours[BehaviourId::NAVIGATE].active = true;
+}
+void Robot::unshiftTarget(Target t) {
+    _targets.unshift(t);
     _behaviours[BehaviourId::NAVIGATE].active = true;
 }
 
 void Robot::processOdometry() {
-    const auto leftTicks = WheelEncoders::getLeftTicks();
-    const auto rightTicks = WheelEncoders::getRightTicks();
+    auto leftTicks = WheelEncoders::getLeftTicks();
+    auto rightTicks = WheelEncoders::getRightTicks();
     // clear so that if any ticks occur during execution they're not lost
     WheelEncoders::clear();
+
+    PRINT("t");
+    PRINT(leftTicks);
+    PRINT(" ");
+    PRINT(rightTicks);
+
+    if (leftTicks > MAX_TICK_PER_CYCLE) {
+        leftTicks = 0;
+    }
+    if (rightTicks > MAX_TICK_PER_CYCLE) {
+        rightTicks = 0;
+    }
 
     // heuristic for determining direction the ticks were in
     // just purely based on last cycle's PWM sign supplied to motors
@@ -75,18 +93,6 @@ void Robot::processOdometry() {
 
     // push to front so _lastPoseUpdates[0] == poseUpdate
     _lastPoseUpdates.unshift(poseUpdate);
-
-    //    PRINT(leftTicks);
-    //    PRINT(" ");
-    //    PRINT(rightTicks);
-    //    PRINT(" d ");
-    //    PRINT(displacement);
-    //    PRINT(" x ");
-    //    PRINT(_pose.x);
-    //    PRINT(" y ");
-    //    PRINT(_pose.y);
-    //    PRINT(" h ");
-    //    PRINTLN(_pose.heading);
 }
 
 void Robot::applyOdometryUpdate(const PoseUpdate& poseUpdate) {
@@ -172,6 +178,11 @@ bool Robot::run() {
     Network::sendRobotPacket(_lastPoseUpdates[0], _activeBehaviourId);
     // only assign it if we're sure this run was successful
     _lastRunTime = now;
+
+    PRINT(_activeBehaviourId);
+    PRINT(" ");
+    printPose(_pose);
+
     return true;
 }
 
@@ -211,16 +222,17 @@ void Robot::processNextTarget(BehaviourId behaviourCompleted) {
     PRINT("Completed ");
     PRINTLN(behaviourCompleted);
     // should never call this function when out of targets
-    if (_curTargetId < 0) {
+    if (_targets.isEmpty()) {
         return;
     }
 
-    const auto completedTarget = _targets[_curTargetId];
+    const auto completedTarget = _targets.pop();
 
     // always stop turning (will get activated immediately after if necessary)
     _behaviours[BehaviourId::TURN_IN_PLACE].active = false;
 
-    if (--_curTargetId >= 0) {
+    // some next target exists
+    if (_targets.isEmpty() == false) {
         _processBehaviours = true;
     }
 
@@ -247,6 +259,8 @@ void Robot::processPCPacket(const PCPacketData& pcPacket) {
         PRINTLN("pose update");
         // replace our own pose with the updated one
         _pose = pcPacket.pose;
+
+        printPose(_pose);
         // apply historical odometry updates on top of this pose
         // this is always run before the next logic cycle's odometry occurs
         // so if our current SN is 6 and the packet SN is 2
@@ -258,30 +272,43 @@ void Robot::processPCPacket(const PCPacketData& pcPacket) {
              sn >= 0; --sn) {
             applyOdometryUpdate(_lastPoseUpdates[sn]);
         }
+
+        printPose(_pose);
         break;
     case PCPacketIntent::POSE_PING:
         PRINTLN("pose ping");
         // don't do anything
         break;
+    case PCPacketIntent::CLEAR_TARGETS:
+        PRINTLN("clear targets");
+        _targets.clear();
+        break;
     default:
         // some other command
         if (pcPacket.intent < PCPacketIntent::GROUP_OFFSET) {
             // add target
-            Target target;
-            target.type = static_cast<Target::Type>(pcPacket.intent);
-            target.x = pcPacket.pose.x;
-            target.y = pcPacket.pose.y;
-            target.heading = pcPacket.pose.heading;
+            const auto target =
+                Target(pcPacket.pose.x, pcPacket.pose.y, pcPacket.pose.heading,
+                       static_cast<Target::Type>(pcPacket.intent));
+            unshiftTarget(target);
+            PRINT("add target ");
+            PRINT(target.type);
+            PRINT(" ");
+            printPose(target);
         } else if (pcPacket.intent < 2 * PCPacketIntent::GROUP_OFFSET) {
             // enable this behaviour
             const auto behaviourId =
-                pcPacket.intent - 2 * PCPacketIntent::GROUP_OFFSET;
+                pcPacket.intent - PCPacketIntent::GROUP_OFFSET;
             _allowedBehaviours[behaviourId] = true;
+            PRINT("enable ");
+            PRINTLN(behaviourId);
         } else if (pcPacket.intent < 3 * PCPacketIntent::GROUP_OFFSET) {
             // disable this behaviour
             const auto behaviourId =
-                pcPacket.intent - 3 * PCPacketIntent::GROUP_OFFSET;
+                pcPacket.intent - 2 * PCPacketIntent::GROUP_OFFSET;
             _allowedBehaviours[behaviourId] = false;
+            PRINT("disable ");
+            PRINTLN(behaviourId);
         }
         break;
     }

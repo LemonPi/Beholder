@@ -23,6 +23,7 @@ constexpr pc_packet_intent_t TURN_ON = 250;
 constexpr pc_packet_intent_t TURN_OFF = 251;
 constexpr pc_packet_intent_t POSE_UPDATE = 252;
 constexpr pc_packet_intent_t POSE_PING = 253;
+constexpr pc_packet_intent_t CLEAR_TARGETS = 254;
 }
 
 struct PCPacketData {
@@ -106,7 +107,9 @@ class Network {
     static size_t _pcPacketIndex;
     static RxState _rxState;
 
-    static SoftwareSerial _blueTooth;
+    // software serial's not working for RX; instead use HardwareSerial
+    // Using Serial3 which is pins 14 and 15 for Mega
+    //    static SoftwareSerial _blueTooth;
 };
 
 #endif // NETWORK_H

@@ -27,4 +27,5 @@ HEADERS += \
     src/behaviours/common.h \
     src/pose.h \
     src/constants.h \
-    src/network.h
+    src/network.h \
+    src/util.h

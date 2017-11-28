@@ -5,6 +5,7 @@
 #include "../robot.h"
 #include "../debug.h"
 #include "../sonars.h"
+#include "../util.h"
 
 constexpr heading_t HEADING_TOLERANCE = PI / 45;
 
@@ -69,7 +70,7 @@ void WallFollow::compute(BehaviourControl& ctrl) {
     } else {
         // own proportional controller
         ctrl.heading = (_wallDistanceCurrent - _wallDistanceSetpoint) * WALL_KP;
-        ctrl.speed = WALL_FWD_PWM - abs(ctrl.heading);
+        ctrl.speed = WALL_FWD_PWM - myfabs(ctrl.heading);
     }
 
     //    PRINT(_state);

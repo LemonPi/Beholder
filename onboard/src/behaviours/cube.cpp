@@ -3,13 +3,14 @@
 #include "../constants.h"
 #include "../debug.h"
 #include "../robot.h"
+#include "../util.h"
 
 /**
  * Returns estimated distances from IR readings [mm].
  */
 float IRReadingToDistance(const int& reading) {
     // Inverse-linear model.
-    return 13802/(float)reading+6.0777;
+    return 13802 / (float)reading + 6.0777;
 }
 
 /**
@@ -33,27 +34,31 @@ void Robot::computeGetCube() {
     // Distance estimate [mm] for the upper IR rangefinder.
     const auto& irDistanceHigh = readIRRangefinder(IR_RANGEFINDER_HIGH);
     // Difference between the upper and lower IR rangefinder distances [mm].
-    const auto& irDisparity = (irDistanceHigh - IR_RANGEFINDER_OFFSET) - irDistanceLow;
+    const auto& irDisparity =
+        (irDistanceHigh - IR_RANGEFINDER_OFFSET) - irDistanceLow;
 
     PRINT("LOW=");
     PRINT(irDistanceLow);
     PRINT("HIGH=");
     PRINTLN(irDistanceHigh);
 
-    switch(_getCubeState) {
-        case START:
+    ctrl.speed = 0;
+    ctrl.heading = 0;
+
+    switch (_getCubeState) {
+    case START:
         PRINTLN("START");
         _armPosition = ARM_SEARCH_POSITION;
         _clawPosition = CLAW_OPENED;
         _getCubeTurnStartPose = _pose;
         _getCubeState = SEARCH_LEFT;
         _numConsecutiveBlockSightings = 0;
+        _processBehaviours = true;
         break;
-        case SEARCH_LEFT:
+    case SEARCH_LEFT:
         PRINTLN("Search left...");
         // Turn to the left.
-        _leftMc.setVelocity(-CUBE_PICKUP_TURN_SPEED);
-        _rightMc.setVelocity(CUBE_PICKUP_TURN_SPEED);
+        ctrl.heading = -CUBE_PICKUP_TURN_SPEED;
         // Give up on bad readings. Our sensor is only rated to 15 cm.
         if (irDistanceLow > MAX_IR_RANGEFINDER_DISTANCE
             // || irDistanceHigh > MAX_IR_RANGEFINDER_DISTANCE
@@ -63,22 +68,25 @@ void Robot::computeGetCube() {
         if (irDisparity > BLOCK_MIN_DISPARITY) {
             _numConsecutiveBlockSightings++;
             PRINTLN("Saw block!");
-            if (_numConsecutiveBlockSightings > REQUIRED_NUM_CONSECUTIVE_BLOCK_SIGHTINGS) {
+            if (_numConsecutiveBlockSightings >
+                REQUIRED_NUM_CONSECUTIVE_BLOCK_SIGHTINGS) {
                 PRINTLN("Found block!");
                 _getCubeState = DRIVE_FWD;
+                _processBehaviours = true;
             }
-        } else if (abs(headingDifference(_getCubeTurnStartPose, _pose)) > M_PI_4) {
+        } else if (myfabs(headingDifference(_getCubeTurnStartPose, _pose)) >
+                   M_PI_4) {
             // Finished turning 45 degrees.
             _getCubeTurnStartPose = _pose;
             _numConsecutiveBlockSightings = 0;
             _getCubeState = SEARCH_RIGHT;
+            _processBehaviours = true;
         }
         break;
-        case SEARCH_RIGHT:
+    case SEARCH_RIGHT:
         PRINTLN("Search right...");
         // Turn to the right.
-        _leftMc.setVelocity(CUBE_PICKUP_TURN_SPEED);
-        _rightMc.setVelocity(-CUBE_PICKUP_TURN_SPEED);
+        ctrl.heading = CUBE_PICKUP_TURN_SPEED;
         // Give up on bad readings. Our sensor is only rated to 15 cm.
         if (irDistanceLow > MAX_IR_RANGEFINDER_DISTANCE
             // || irDistanceHigh > MAX_IR_RANGEFINDER_DISTANCE
@@ -88,51 +96,56 @@ void Robot::computeGetCube() {
         if (irDisparity > BLOCK_MIN_DISPARITY) {
             _numConsecutiveBlockSightings++;
             PRINTLN("Saw block!");
-            if (_numConsecutiveBlockSightings > REQUIRED_NUM_CONSECUTIVE_BLOCK_SIGHTINGS) {
+            if (_numConsecutiveBlockSightings >
+                REQUIRED_NUM_CONSECUTIVE_BLOCK_SIGHTINGS) {
                 PRINTLN("Found block!");
                 _getCubeState = DRIVE_FWD;
+                _processBehaviours = true;
             }
-        } else if (abs(headingDifference(_getCubeTurnStartPose, _pose)) > M_PI_2) {
+        } else if (myfabs(headingDifference(_getCubeTurnStartPose, _pose)) >
+                   M_PI_2) {
             // Finished turning 90 degrees.
             _getCubeTurnStartPose = _pose;
             _numConsecutiveBlockSightings = 0;
             _getCubeState = SEARCH_LEFT;
+            _processBehaviours = true;
         }
         break;
-        case DRIVE_FWD:
+    case DRIVE_FWD:
         PRINTLN("Driving forward!");
-        _leftMc.setVelocity(CUBE_PICKUP_FORWARD_SPEED);
-        _rightMc.setVelocity(CUBE_PICKUP_FORWARD_SPEED);
+        ctrl.speed = CUBE_PICKUP_FORWARD_SPEED;
         // Lost block. Return to searching.
         if (irDisparity < BLOCK_LOST_MULT * BLOCK_MIN_DISPARITY) {
             _getCubeState = START;
+            _processBehaviours = true;
         }
         // Arrived at block. Pick it up.
         if (irDistanceLow <= BLOCK_MIN_DISTANCE) {
-            _leftMc.setVelocity(0);
-            _rightMc.setVelocity(0);
             _getCubeState = CLOSING;
+            _processBehaviours = true;
         }
         break;
-        case CLOSING:
+    case CLOSING:
         PRINTLN("Closing!");
         // Close the claw.
         _clawPosition -= CLAW_SPEED;
         if (_clawPosition <= CLAW_CLOSED) {
             _getCubeState = RAISING;
+            _processBehaviours = true;
         }
         break;
-        case RAISING:
+    case RAISING:
         PRINTLN("Raising.");
         // Raise the arm.
         _armPosition += ARM_SPEED;
         if (_armPosition >= ARM_UP) {
             // Done.
             ctrl.active = false;
+            _processBehaviours = true;
         }
         break;
-        default:
-        //fail
+    default:
+        // fail
         break;
     }
     _armServo.write(_armPosition);
@@ -146,21 +159,25 @@ void Robot::computePutCube() {
         return;
     }
 
-    switch(_putCubeState){
-        case LOWERING:
+    // this behaviour doesn't involve motion
+    ctrl.speed = 0;
+    ctrl.heading = 0;
+
+    switch (_putCubeState) {
+    case LOWERING:
         _armPosition -= ARM_SPEED;
         if (_armPosition <= ARM_DOWN) {
             _putCubeState = OPENING;
         }
         break;
-        case OPENING:
+    case OPENING:
         _clawPosition += CLAW_SPEED;
         if (_clawPosition >= CLAW_OPENED) {
             ctrl.active = false;
         }
         break;
-        default:
-        //fail
+    default:
+        // fail
         break;
     }
     _armServo.write(_armPosition);
