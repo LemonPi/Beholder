@@ -43,6 +43,15 @@ void setup() {
     Sonars::setupPingTimers();
     WheelEncoders::setUp(LEFT_INTERRUPT_PIN, RIGHT_INTERRUPT_PIN);
 
+    robot.setBehaviour(Robot::BehaviourId::WALL_FOLLOW, false);
+    robot.setBehaviour(Robot::BehaviourId::TURN_IN_FRONT_OF_WALL, false);
+    robot.setBehaviour(Robot::BehaviourId::NAVIGATE, true);
+    robot.setBehaviour(Robot::BehaviourId::TURN_IN_PLACE, true);
+
+    // ------------- DEBUG target
+    robot.unshiftTarget(Target(100, 0, -PI / 2, Target::NAVIGATE));
+    robot.unshiftTarget(Target(100, 100, -PI / 2, Target::NAVIGATE));
+
     // wait for PC to turn it on
     robot.turnOn();
 }
@@ -55,9 +64,6 @@ void loop() {
     //    rightMc.setVelocity(50);
     //    leftMc.go();
     //    rightMc.go();
-
-    robot.setBehaviour(Robot::BehaviourId::WALL_FOLLOW, false);
-    robot.setBehaviour(Robot::BehaviourId::TURN_IN_FRONT_OF_WALL, false);
 
     robot.run();
 
@@ -73,5 +79,11 @@ void loop() {
             PRINT("mm ");
         }
         PRINTLN();
+    }
+
+    if (Serial.available()) {
+        if (Serial.read() == 'o') {
+            robot.turnOff();
+        }
     }
 }

@@ -16,6 +16,7 @@
  * @brief The class representing a single mobile robot entity
  */
 class Robot {
+    // wheel resolution
     static constexpr auto MM_PER_TICK_L = 80.5 * PI / 18;
     static constexpr auto MM_PER_TICK_R = MM_PER_TICK_L;
 
@@ -61,6 +62,13 @@ class Robot {
 
   public:
     /**
+     * @brief Heading resolution [rad]
+     * atan2(1 * MM_PER_TICK, BASE_LENGTH)
+     * Note for turning in place it's actually twice this
+     */
+    static constexpr auto HEADING_RES = 0.09;
+
+    /**
      * @brief Minimum time [ms] between the start of
      * run calls. Note that this assumes the time to execute run is
      * less than itself, as otherwise we get one cycle eating into
@@ -73,6 +81,9 @@ class Robot {
 
     // global speed scale
     static constexpr auto SPEED_SCALE = 1;
+
+    // expected max ticks per cycle; anything greater was likely due to bouncing
+    static constexpr auto MAX_TICK_PER_CYCLE = 4 * LOGIC_PERIOD_MS / 100;
 
     // Speeds for cube pickup.
     static constexpr auto CUBE_PICKUP_TURN_SPEED = SPEED_SCALE*0.25*MOTOR_PWM_MAX;
@@ -130,6 +141,11 @@ class Robot {
      * @param t
      */
     void pushTarget(Target t);
+    /**
+     * @brief Unshift (as in a queue) a target as the least immediate goal
+     * @param t
+     */
+    void unshiftTarget(Target t);
 
   private:
     // behaviour layer computations
@@ -201,8 +217,7 @@ class Robot {
     WallFollow _wallFollow;
 
     // target bookkeeping
-    Target _targets[MAX_NUM_TARGETS];
-    int _curTargetId;
+    CircularBuffer<Target, MAX_NUM_TARGETS> _targets;
 };
 
 #endif // ROBOT_H
