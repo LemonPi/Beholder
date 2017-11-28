@@ -1,0 +1,23 @@
+from enum import IntEnum, Enum
+
+class Intents(IntEnum):
+    START = 250
+    STOP = 251
+    POSE_UPDATE = 252
+    POSE_PING = 253
+    CLEAR = 254
+    ADD_WAYPOINT = 0
+    ENABLE_WALL_FOLLOW = 31
+    ENABLE_NAVIGATE = 32
+    ENABLE_WALL_TURN = 33
+    ENABLE_TURN_IN_PLACE = 34
+    ENABLE_GET_CUBE = 35
+    DISABLE_WALL_FOLLOW = 61
+    DISABLE_NAVIGATE = 62
+    DISABLE_WALL_TURN = 63
+    DISABLE_TURN_IN_PLACE = 64
+    DISABLE_GET_CUBE = 65
+
+class PacketCodes(bytes, Enum):
+    ROBOT_PACKET_START = b'\xa1'
+    PC_PACKET_START = b'\xf5'
