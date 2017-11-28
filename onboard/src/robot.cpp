@@ -41,8 +41,8 @@ void Robot::turnOn() {
 void Robot::turnOff() {
     _on = false;
     _wallFollow.followOff();
-    _leftMc.floatStop();
-    _rightMc.floatStop();
+    _leftMc.fastStop();
+    _rightMc.fastStop();
 }
 
 void Robot::setBehaviour(BehaviourId behaviourId, bool enable) {
@@ -118,13 +118,15 @@ bool Robot::run() {
         Network::resetPcPacket();
     }
 
-    if (_on == false) {
-        return false;
-    }
-
     const auto now = millis();
     // not yet for next logic cycle
     if ((now - _lastRunTime) < Robot::LOGIC_PERIOD_MS) {
+        return false;
+    }
+
+    if (_on == false) {
+        _leftMc.fastStop();
+        _rightMc.fastStop();
         return false;
     }
 
