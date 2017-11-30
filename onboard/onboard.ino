@@ -45,21 +45,27 @@ void setup() {
 
     //    robot.setBehaviour(Robot::BehaviourId::WALL_FOLLOW, false);
     //    robot.setBehaviour(Robot::BehaviourId::TURN_IN_FRONT_OF_WALL, false);
-    robot.setBehaviour(Robot::BehaviourId::NAVIGATE, false);
-    robot.setBehaviour(Robot::BehaviourId::TURN_IN_PLACE, false);
-    robot.setBehaviour(Robot::BehaviourId::GET_CUBE, false);
-    robot.setBehaviour(Robot::BehaviourId::PUT_CUBE, false);
+    //    robot.setBehaviour(Robot::BehaviourId::NAVIGATE, false);
+    //    robot.setBehaviour(Robot::BehaviourId::TURN_IN_PLACE, false);
+    //    robot.setBehaviour(Robot::BehaviourId::GET_CUBE, false);
+    //    robot.setBehaviour(Robot::BehaviourId::PUT_CUBE, false);
 
     // ------------- DEBUG target
 
+    //    robot.unshiftTarget(Target(50, 0, 0, Target::NAVIGATE));
+    //    robot.unshiftTarget(Target(0, 0, 0, Target::GET_CUBE));
+    //    robot.unshiftTarget(
+    //        Target(152.4, 1066.8, Target::ANY_HEADING, Target::NAVIGATE));
+    //    robot.unshiftTarget(Target(152.4, 762, -HALF_PI, Target::GET_CUBE));
     //     initial turn in place 360 to try to converge
-    //    robot.unshiftTarget(Target(0, 0, PI / 2, Target::TURN_IN_PLACE));
+    //            robot.unshiftTarget(Target(0, 0, PI / 2,
+    //            Target::TURN_IN_PLACE));
     //    robot.unshiftTarget(Target(0, 0, PI, Target::TURN_IN_PLACE));
     //    robot.unshiftTarget(Target(0, 0, PI * 3 / 2, Target::TURN_IN_PLACE));
     //    robot.unshiftTarget(Target(0, 0, PI * 2, Target::TURN_IN_PLACE));
 
     // wait for PC to turn it on
-    robot.turnOn();
+    //    robot.turnOn();
 }
 
 void loop() {

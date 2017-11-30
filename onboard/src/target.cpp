@@ -7,5 +7,5 @@ Target::Target(coord_t x, coord_t y, heading_t h, Type t)
 }
 
 bool Target::hasTargetHeading() const {
-    return myfabs(heading - ANY_HEADING) > 1;
+    return myfabs(heading - ANY_HEADING) > 100;
 }

@@ -49,7 +49,7 @@ void WallFollow::compute(BehaviourControl& ctrl) {
 
     // don't drive if wall in front
     if (Sonars::getReading(Sonars::FRONT) < 100) {
-        PRINTLN("break follow");
+        PRINT("B");
         ctrl.active = false;
         return;
     }

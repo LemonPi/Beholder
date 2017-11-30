@@ -111,7 +111,7 @@ bool Robot::run() {
     // we receive packets even when we're not "running" because we could be told
     // to turn on
     if (Network::recvPcPacket()) {
-        PRINTLN("recv");
+        //        PRINTLN("recv");
         const auto pcUpdate = Network::getLatestPCPacket();
         processPCPacket(pcUpdate);
         Network::resetPcPacket();
@@ -206,9 +206,9 @@ bool Robot::run() {
     // only assign it if we're sure this run was successful
     _lastRunTime = now;
 
-    PRINT(_activeBehaviourId);
-    PRINT(" ");
-    printPose(_pose);
+    //    PRINT(_activeBehaviourId);
+    //    PRINT(" ");
+    //    printPose(_pose);
 
     return true;
 }
@@ -238,16 +238,18 @@ void Robot::controlMotors(const BehaviourControl& control) {
     }
 
     // debugging
-    PRINT(_activeBehaviourId);
-    PRINT(" L: ");
-    PRINT(_leftMc.getVelocity());
-    PRINT(" R: ");
-    PRINTLN(_rightMc.getVelocity());
+    //    PRINT(_activeBehaviourId);
+    //    PRINT(" L: ");
+    //    PRINT(_leftMc.getVelocity());
+    //    PRINT(" R: ");
+    //    PRINTLN(_rightMc.getVelocity());
 }
 
 void Robot::processNextTarget(BehaviourId behaviourCompleted) {
-    PRINT("Completed ");
-    PRINTLN(behaviourCompleted);
+    PRINT("CT ");
+    PRINT(behaviourCompleted);
+    PRINT(" ");
+    printPose(_pose);
     // should never call this function when out of targets
     if (_targets.isEmpty()) {
         return;
@@ -261,6 +263,12 @@ void Robot::processNextTarget(BehaviourId behaviourCompleted) {
     // some next target exists
     if (_targets.isEmpty() == false) {
         _processBehaviours = true;
+        PRINT("NT ");
+        PRINT(_targets.last().type);
+        PRINT(" ");
+        printPose(_targets.last());
+        PRINT("CP ");
+        printPose(_pose);
     }
 
     // reached the place where we need to find and get the cube
@@ -275,19 +283,21 @@ void Robot::processNextTarget(BehaviourId behaviourCompleted) {
 void Robot::processPCPacket(const PCPacketData& pcPacket) {
     switch (pcPacket.intent) {
     case PCPacketIntent::TURN_ON:
-        PRINTLN("turn on");
+        PRINTLN("On");
         turnOn();
         break;
     case PCPacketIntent::TURN_OFF:
-        PRINTLN("turn off");
+        PRINTLN("Off");
         turnOff();
         break;
     case PCPacketIntent::POSE_UPDATE:
-        PRINTLN("pose update");
+        //        PRINT("P");
         _converged = true;
         // replace our own pose with the updated one
         _pose = pcPacket.pose;
 
+        PRINT(Network::getSequenceNum());
+        PRINT(" ");
         printPose(_pose);
         // apply historical odometry updates on top of this pose
         // this is always run before the next logic cycle's odometry occurs
@@ -304,7 +314,7 @@ void Robot::processPCPacket(const PCPacketData& pcPacket) {
         printPose(_pose);
         break;
     case PCPacketIntent::POSE_PING:
-        PRINTLN("pose ping");
+        //        PRINT("p");
         // don't do anything
         break;
     case PCPacketIntent::CLEAR_TARGETS:
@@ -331,7 +341,7 @@ void Robot::processPCPacket(const PCPacketData& pcPacket) {
                 Target(pcPacket.pose.x, pcPacket.pose.y, pcPacket.pose.heading,
                        static_cast<Target::Type>(pcPacket.intent));
             unshiftTarget(target);
-            PRINT("add target ");
+            PRINT("AT ");
             PRINT(target.type);
             PRINT(" ");
             printPose(target);

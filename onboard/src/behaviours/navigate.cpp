@@ -58,7 +58,8 @@ void Robot::computeNavigate() {
     const auto headingToTarget = headingToPoint(_pose, target);
 
     // stop if we're close enough but there's a wall too close in front
-    if ((Sonars::getReading(Sonars::FRONT) < WALL_CLOSE_DIST) ||
+    if ((Sonars::getReading(Sonars::FRONT) < WALL_CLOSE_DIST &&
+         distToTarget < TARGET_STOP_WALL_CLOSE) ||
         // check if we're close enough to target
         distToTarget < TARGET_STOP_IMMEDIATE ||
         (distToTarget < TARGET_STOP_IF_DIVERGING &&
@@ -70,7 +71,8 @@ void Robot::computeNavigate() {
             myfabs(headingDiff) > HEADING_THRESHOLD) {
             _behaviours[BehaviourId::TURN_IN_PLACE].active = true;
             _processBehaviours = true;
-            PRINTLN("turn to desired");
+            PRINT("TTD ");
+            PRINTLN(_pose.heading);
         } else {
             // done with target
             processNextTarget(BehaviourId::NAVIGATE);
@@ -83,7 +85,8 @@ void Robot::computeNavigate() {
         pushTarget(Target(_pose.x, _pose.y, _pose.heading + headingToTarget,
                           Target::TURN_IN_PLACE));
         _processBehaviours = true;
-        PRINTLN("turn to face");
+        PRINT("TTF ");
+        PRINTLN(_targets.last().heading);
     }
 
     // normal navigation
@@ -152,13 +155,13 @@ void Robot::computeNavigate() {
         ctrl.speed = max(MIN_NAV_SPEED, ctrl.speed);
     }
 
-    PRINT("n");
-    PRINT(ctrl.speed);
-    PRINT(" ");
-    PRINT(ctrl.heading);
-    PRINT(" ");
-    PRINT(distToTarget);
-    PRINT(" ");
+    //    PRINT("n");
+    //    PRINT(ctrl.speed);
+    //    PRINT(" ");
+    //    PRINT(ctrl.heading);
+    //    PRINT(" ");
+    //    PRINT(distToTarget);
+    //    PRINT(" ");
 
     _lastDistToTarget = distToTarget;
 }
@@ -190,8 +193,8 @@ void Robot::computeTurnInPlace() {
 
     const auto toTurn = headingDifference(_targets.last(), _pose);
 
-    PRINT(toTurn);
-    PRINT(" ");
+    //    PRINT(toTurn);
+    //    PRINT(" ");
 
     // finished with this target
     if (myfabs(toTurn) < HEADING_THRESHOLD) {

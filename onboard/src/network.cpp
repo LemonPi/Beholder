@@ -80,7 +80,7 @@ bool Network::recvPcPacket() {
         case RxState::WAIT_FOR_START:
             if (c == PC::PACKET_START_BYTE) {
                 _rxState = RxState::READING;
-                PRINTLN("r");
+                //                PRINTLN("r");
                 _pcPacketIndex = 0;
             }
             break;
@@ -97,7 +97,7 @@ bool Network::recvPcPacket() {
 
                 if (c == crc) {
                     _rxState = RxState::HAVE_VALID_PACKET;
-                    PRINTLN("vp");
+                    //                    PRINTLN("vp");
                 } else {
                     // something went wrong and we got back CRC
                     // just ignore packet
